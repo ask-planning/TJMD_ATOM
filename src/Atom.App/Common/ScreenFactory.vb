@@ -1,4 +1,5 @@
 \xEF\xBB\xBFImports System.Windows.Forms
+Imports Atom.App.Forms.Expense
 
 Namespace Common
     ''' <summary>メニュー番号 → 画面 の対応（現行 指定フォームオープン 相当）。実装済みは New して返し、未実装は Nothing。</summary>
@@ -13,7 +14,7 @@ Namespace Common
                 Case 301 ' 諸経費入力
                 Case 902, 903, 904, 905, 906 ' マスタ関連
                 Case 907 ' 経費コード登録
-                    ' TODO: 画面有効化時に → Return New ExpenseCodeMaintenanceForm()
+                    Return New ExpenseCodeMaintenanceForm()
             End Select
             Return Nothing ' 未実装
         End Function

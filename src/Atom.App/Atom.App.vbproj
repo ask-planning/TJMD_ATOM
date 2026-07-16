@@ -93,6 +93,7 @@
     <Compile Include="Common\ScreenTitles.vb" />
     <Compile Include="Common\PermissionChecker.vb" />
     <Compile Include="Common\ReconnectService.vb" />
+    <Compile Include="Forms\Expense\ExpenseCodeMaintenanceForm.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
