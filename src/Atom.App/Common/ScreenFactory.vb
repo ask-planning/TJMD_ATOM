@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Windows.Forms
+﻿Imports System.Windows.Forms
 Imports Atom.App.Forms.Expense
 
 Namespace Common

@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Collections.Generic
+﻿Imports System.Collections.Generic
 Imports System.Data
 Imports System.Data.SqlClient
 

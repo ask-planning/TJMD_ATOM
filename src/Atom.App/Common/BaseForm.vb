@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Drawing
+﻿Imports System.Drawing
 Imports System.Windows.Forms
 
 Namespace Common

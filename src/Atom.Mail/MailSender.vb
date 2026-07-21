@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Net.Mail
+﻿Imports System.Net.Mail
 
 ''' <summary>メール送信（現行 BASP21 + 共有フォルダExcel出力 の置換）。</summary>
 Public Class MailSender

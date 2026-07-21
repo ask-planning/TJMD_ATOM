@@ -1,4 +1,4 @@
-\xEF\xBB\xBFNamespace Common
+﻿Namespace Common
     ''' <summary>丸め共通関数（現行 四捨五入 / 切り捨て に対応）。</summary>
     Public Module NumberHelper
         ''' <summary>四捨五入する。</summary>

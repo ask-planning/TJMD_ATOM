@@ -1,4 +1,4 @@
-\xEF\xBB\xBFNamespace Common
+﻿Namespace Common
     ''' <summary>メニュー番号に対する権限判定（現行 管理者フラグ判定 相当）。</summary>
     Public Module PermissionChecker
         ''' <summary>指定メニューが許可されているかを返す。</summary>

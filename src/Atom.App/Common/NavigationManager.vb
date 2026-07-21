@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Windows.Forms
+﻿Imports System.Windows.Forms
 
 Namespace Common
     ''' <summary>画面遷移（現行 form_open_close 相当）。メニューから画面をモーダルで開き、閉じるとメニューへ戻る。</summary>

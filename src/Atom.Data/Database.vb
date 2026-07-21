@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Configuration
+﻿Imports System.Configuration
 Imports System.Data.SqlClient
 
 ''' <summary>SQL Server 接続基盤（現行 CurrentProject.BaseConnectionString 相当）。</summary>

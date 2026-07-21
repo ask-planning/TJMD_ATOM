@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Collections.Generic
+﻿Imports System.Collections.Generic
 Imports System.Data
 Imports System.Windows.Forms
 Imports Atom.App.Common

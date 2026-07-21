@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Data
+﻿Imports System.Data
 Imports System.Data.SqlClient
 
 Namespace Repositories

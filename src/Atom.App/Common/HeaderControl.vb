@@ -1,4 +1,4 @@
-\xEF\xBB\xBFNamespace Common
+﻿Namespace Common
     ''' <summary>各画面共通のヘッダー部品（ログイン/氏名/部門/画面名）。レイアウトはデザイナー(HeaderControl.Designer.vb)。</summary>
     Public Class HeaderControl
 

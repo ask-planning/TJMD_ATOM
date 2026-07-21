@@ -1,4 +1,4 @@
-\xEF\xBB\xBFImports System.Collections.Generic
+﻿Imports System.Collections.Generic
 
 Namespace Common
     ''' <summary>ログイン中の利用者情報と権限（現行 PUBLIC変数 / login系 に対応）。</summary>
