@@ -5,9 +5,8 @@ Imports Atom.App.Common
 Imports Atom.Data.Repositories
 
 Namespace Forms.Expense
-    ''' <summary>経費コード登録（現行 F_M_経費コード登録_MAIN + _SUB を1フォームに統合）。</summary>
+    ''' <summary>経費コード登録（現行 F_M_経費コード登録_MAIN + _SUB を1フォームに統合）。レイアウトはデザイナー。</summary>
     Public Class ExpenseCodeMaintenanceForm
-        Inherits BaseForm
 
 #Region "定数"
         ' 経費区分の選択肢（TODO: View__keihi_kbn から取得）
@@ -16,28 +15,28 @@ Namespace Forms.Expense
 
 #Region "フィールド"
         Private ReadOnly _repo As New ExpenseCodeRepository()
-        Private ReadOnly bsExpense As New BindingSource()
-        Private ReadOnly dgvList As New DataGridView()
         Private _table As DataTable
 #End Region
 
 #Region "コンストラクター"
         ''' <summary>画面を初期化する（タイトルは menuNo からリソース解決）。</summary>
         Public Sub New()
+            InitializeComponent()
             Me.MenuNo = 907
-            Me.BuildUi()
         End Sub
 #End Region
 
 #Region "イベントハンドラー"
-        ''' <summary>読み込み時：権限チェック（基底）後に一覧を取得・表示する。</summary>
+        ''' <summary>読み込み時：区分コンボ設定と一覧取得・表示。</summary>
         Protected Overrides Sub OnLoad(e As EventArgs)
             MyBase.OnLoad(e)
+            ' 経費区分の選択肢をコンボ列へ設定する
+            Me.colKbn.Items.AddRange(DirectCast(KbnOptions, Object()))
             Me.LoadData()
         End Sub
 
         ''' <summary>編集時に更新日時・更新者を自動セットする（現行 AfterUpdate 相当）。</summary>
-        Private Sub OnCellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
+        Private Sub OnCellValueChanged(sender As Object, e As DataGridViewCellEventArgs) Handles dgvList.CellValueChanged
             ' 見出し行・無効セルは対象外
             If e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then
                 Return
@@ -57,8 +56,13 @@ Namespace Forms.Expense
             row.Cells("colUsr").Value = SessionContext.Current.LoginCode
         End Sub
 
+        ''' <summary>新規行追加ボタン。</summary>
+        Private Sub OnAddClick(sender As Object, e As EventArgs) Handles btnAdd.Click
+            Me.bsExpense.AddNew()
+        End Sub
+
         ''' <summary>行削除ボタン：選択行を削除する。</summary>
-        Private Sub OnDeleteClick(sender As Object, e As EventArgs)
+        Private Sub OnDeleteClick(sender As Object, e As EventArgs) Handles btnDelete.Click
             ' 未選択・新規行のときは何もしない
             If Me.dgvList.CurrentRow Is Nothing OrElse Me.dgvList.CurrentRow.IsNewRow Then
                 Return
@@ -71,7 +75,7 @@ Namespace Forms.Expense
         End Sub
 
         ''' <summary>保存ボタン：未入力・重複を確認して保存する。</summary>
-        Private Sub OnSaveClick(sender As Object, e As EventArgs)
+        Private Sub OnSaveClick(sender As Object, e As EventArgs) Handles btnSave.Click
             Me.bsExpense.EndEdit()
             Dim seen As New HashSet(Of String)()
             ' 全行の経費コードを検査する
@@ -106,62 +110,6 @@ Namespace Forms.Expense
 #End Region
 
 #Region "内部メソッド"
-        ''' <summary>画面UI（操作バー＋グリッド）を組み立てる。</summary>
-        Private Sub BuildUi()
-            ' 操作バー（新規行追加 / 行削除 / 保存）
-            Dim bar As New FlowLayoutPanel() With {
-                .Dock = DockStyle.Top, .Height = 40, .Padding = New Padding(6, 6, 6, 4),
-                .FlowDirection = FlowDirection.LeftToRight}
-            Dim btnAdd As New Button() With {.Text = "新規行追加", .Width = 100, .Height = 26, .Margin = New Padding(0, 0, 6, 0)}
-            Dim btnDel As New Button() With {.Text = "行削除", .Width = 90, .Height = 26, .Margin = New Padding(0, 0, 6, 0)}
-            Dim btnSave As New Button() With {.Text = "保存", .Width = 90, .Height = 26}
-            AddHandler btnAdd.Click, Sub(s As Object, ev As EventArgs) Me.bsExpense.AddNew()
-            AddHandler btnDel.Click, AddressOf Me.OnDeleteClick
-            AddHandler btnSave.Click, AddressOf Me.OnSaveClick
-            bar.Controls.Add(btnAdd)
-            bar.Controls.Add(btnDel)
-            bar.Controls.Add(btnSave)
-
-            ' 一覧グリッド
-            Me.dgvList.Dock = DockStyle.Fill
-            Me.dgvList.AutoGenerateColumns = False
-            Me.dgvList.AllowUserToAddRows = True
-            Me.dgvList.AllowUserToDeleteRows = True
-            Me.dgvList.SelectionMode = DataGridViewSelectionMode.FullRowSelect
-            Me.dgvList.RowHeadersWidth = 24
-            Me.BuildColumns()
-            AddHandler Me.dgvList.CellValueChanged, AddressOf Me.OnCellValueChanged
-            Me.dgvList.DataSource = Me.bsExpense
-
-            ' Fill を先、Top を後に追加する
-            Me.ContentPanel.Controls.Add(Me.dgvList)
-            Me.ContentPanel.Controls.Add(bar)
-        End Sub
-
-        ''' <summary>グリッドの列を定義する。</summary>
-        Private Sub BuildColumns()
-            Me.dgvList.Columns.Add(Me.TextColumn("colCode", "経費コード", "pk_keihi_code", 120, False))
-            Me.dgvList.Columns.Add(Me.TextColumn("colText", "経費コード名称", "keihi_code_text", 220, False))
-
-            ' 経費区分（コンボ）
-            Dim kbn As New DataGridViewComboBoxColumn() With {
-                .Name = "colKbn", .HeaderText = "経費区分", .DataPropertyName = "keihi_kbn", .Width = 110}
-            kbn.Items.AddRange(DirectCast(KbnOptions, Object()))
-            kbn.FlatStyle = FlatStyle.Flat
-            Me.dgvList.Columns.Add(kbn)
-
-            Me.dgvList.Columns.Add(Me.TextColumn("colRef", "参照コード", "keihi_code_ref", 100, False))
-            Me.dgvList.Columns.Add(Me.TextColumn("colYmd", "更新日時", "update_ymd", 150, True))
-            Me.dgvList.Columns.Add(Me.TextColumn("colUsr", "更新者", "update_login", 90, True))
-        End Sub
-
-        ''' <summary>テキスト列を作る。</summary>
-        Private Function TextColumn(name As String, header As String, prop As String, width As Integer, readOnlyColumn As Boolean) As DataGridViewTextBoxColumn
-            Return New DataGridViewTextBoxColumn() With {
-                .Name = name, .HeaderText = header, .DataPropertyName = prop,
-                .Width = width, .[ReadOnly] = readOnlyColumn}
-        End Function
-
         ''' <summary>一覧を取得して表示する（DB未接続時は空一覧）。</summary>
         Private Sub LoadData()
             Try

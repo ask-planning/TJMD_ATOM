@@ -1,21 +1,11 @@
-﻿Imports System.Drawing
-Imports System.Windows.Forms
+﻿Imports System.Windows.Forms
 
 Namespace Common
     ''' <summary>
     ''' 全画面の基底フォーム。ヘッダー・フッター（閉じる/再接続）・起動時権限チェック・最大化を提供する。
-    ''' 各画面はこれを継承し、ContentPanel に固有UIを載せる。
+    ''' レイアウトはデザイナー(BaseForm.Designer.vb)。各画面はこれを継承し pnlContent に固有UIを載せる。
     ''' </summary>
     Public Class BaseForm
-        Inherits Form
-
-#Region "フィールド"
-        Private ReadOnly hdrHeader As New HeaderControl()
-        Private ReadOnly pnlFooter As New Panel()
-        Private ReadOnly btnClose As New Button()
-        Private ReadOnly btnReconnect As New Button()
-        Private ReadOnly pnlContent As New Panel()
-#End Region
 
 #Region "プロパティ"
         ''' <summary>各画面が固有UIを配置する領域。</summary>
@@ -32,36 +22,9 @@ Namespace Common
 #End Region
 
 #Region "コンストラクター"
-        ''' <summary>基底フォームを初期化する（ヘッダー・フッター・本体領域を配置）。</summary>
+        ''' <summary>基底フォームを初期化する。</summary>
         Public Sub New()
-            Me.Font = New Font("Meiryo UI", 9.0!)
-            Me.StartPosition = FormStartPosition.CenterScreen
-            Me.WindowState = FormWindowState.Maximized
-
-            ' フッター（下端）に 再接続 / 閉じる を右寄せで並べる
-            Me.pnlFooter.Dock = DockStyle.Bottom
-            Me.pnlFooter.Height = 46
-            Me.pnlFooter.Padding = New Padding(8)
-            Me.btnReconnect.Text = "再接続"
-            Me.btnReconnect.Width = 100
-            Me.btnReconnect.Dock = DockStyle.Right
-            Me.btnClose.Text = "閉じる"
-            Me.btnClose.Width = 100
-            Me.btnClose.Dock = DockStyle.Right
-            AddHandler Me.btnClose.Click, AddressOf Me.OnCloseClick
-            AddHandler Me.btnReconnect.Click, AddressOf Me.OnReconnectClick
-            Dim pnlSpacer As New Panel() With {.Width = 6, .Dock = DockStyle.Right}
-            Me.pnlFooter.Controls.Add(Me.btnClose)
-            Me.pnlFooter.Controls.Add(pnlSpacer)
-            Me.pnlFooter.Controls.Add(Me.btnReconnect)
-
-            ' 本体領域は残りを埋める
-            Me.pnlContent.Dock = DockStyle.Fill
-
-            ' Fill を先、次に端（Bottom/Top）を追加すると正しく段組みされる
-            Me.Controls.Add(Me.pnlContent)
-            Me.Controls.Add(Me.pnlFooter)
-            Me.Controls.Add(Me.hdrHeader)
+            InitializeComponent()
         End Sub
 #End Region
 
@@ -84,12 +47,12 @@ Namespace Common
         End Sub
 
         ''' <summary>「閉じる」動作。既定はフォームを閉じ、呼び出し元へ戻る。</summary>
-        Protected Overridable Sub OnCloseClick(sender As Object, e As EventArgs)
+        Protected Overridable Sub OnCloseClick(sender As Object, e As EventArgs) Handles btnClose.Click
             Me.Close()
         End Sub
 
         ''' <summary>「再接続」動作。</summary>
-        Private Sub OnReconnectClick(sender As Object, e As EventArgs)
+        Private Sub OnReconnectClick(sender As Object, e As EventArgs) Handles btnReconnect.Click
             ReconnectService.Reconnect(Me)
         End Sub
 #End Region
