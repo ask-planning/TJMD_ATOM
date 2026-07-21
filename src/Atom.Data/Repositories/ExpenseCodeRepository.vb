@@ -9,8 +9,8 @@ Namespace Repositories
         ' 一覧取得SQL（長文は XMLリテラルで複数行）
         Private Shared ReadOnly SelectAllSql As String =
             <sql>
-                SELECT pk_keihi_code, keihi_code_text, keihi_kbn,
-                       keihi_code_ref, update_ymd, update_login
+                SELECT pk_keihi_code, keihi_code_text, keihi_code_ref, keihi_kbn,
+                       hoken_taisyo_flg, update_ymd, update_login
                 FROM   tbl_m_import_keihi_code
                 ORDER  BY pk_keihi_code
             </sql>.Value
@@ -46,6 +46,44 @@ Namespace Repositories
                 End Using
             End Using
         End Sub
+
+        ''' <summary>伝票コードコンボ用：コードと名称の一覧を取得する（マスタ自身から）。</summary>
+        ''' <returns>pk_keihi_code / keihi_code_text の一覧。</returns>
+        Public Function SelectCodeList() As DataTable
+            Dim table As New DataTable()
+            ' コードと名称を取得する
+            Using conn As SqlConnection = Database.CreateConnection()
+                Using adapter As New SqlDataAdapter("SELECT pk_keihi_code, keihi_code_text FROM tbl_m_import_keihi_code ORDER BY pk_keihi_code", conn)
+                    adapter.Fill(table)
+                End Using
+            End Using
+            Return table
+        End Function
+
+        ''' <summary>区分コンボ用：区分の（コード, 名称）一覧を取得する（View__keihi_kbn の先頭2列）。※列順は現行DBで要確認。</summary>
+        ''' <returns>code / name の2列を持つ一覧。</returns>
+        Public Function SelectKbnList() As DataTable
+            Dim result As New DataTable()
+            result.Columns.Add("code", GetType(String))
+            result.Columns.Add("name", GetType(String))
+            ' 区分ビューから候補を取得する（0列目=コード, 1列目=名称 を想定）
+            Using conn As SqlConnection = Database.CreateConnection()
+                Using command As New SqlCommand("SELECT * FROM View__keihi_kbn", conn)
+                    conn.Open()
+                    Using reader As SqlDataReader = command.ExecuteReader()
+                        While reader.Read()
+                            Dim code As String = Convert.ToString(reader(0))
+                            Dim displayName As String = code
+                            If reader.FieldCount > 1 Then
+                                displayName = Convert.ToString(reader(1))
+                            End If
+                            result.Rows.Add(code, displayName)
+                        End While
+                    End Using
+                End Using
+            End Using
+            Return result
+        End Function
 
         ' TODO: SaveExpenseCode(DataTable) は SqlDataAdapter + SqlCommandBuilder 等で実装。
         ' 更新時の update_ymd / update_login スタンプは画面側 or ここで付与（設計書D-1参照）。

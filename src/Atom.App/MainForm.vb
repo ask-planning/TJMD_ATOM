@@ -28,15 +28,19 @@ Public Class MainForm
             MessageBox.Show("処理権限がありません。", "権限", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
-        ' 対応画面を生成する（未実装なら Nothing）
-        Dim screen As Form = ScreenFactory.Create(menuNo)
-        If screen Is Nothing Then
-            MessageBox.Show("この画面は未実装です。（menuNo=" & menuNo.ToString() & "）",
-                            "未実装", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            Return
-        End If
-        ' 画面を開く
-        NavigationManager.OpenForm(screen, Me)
+        ' 対応画面を生成して開く（失敗時はメッセージ表示）
+        Try
+            Dim screen As Form = ScreenFactory.Create(menuNo)
+            If screen Is Nothing Then
+                MessageBox.Show("この画面は未実装です。（menuNo=" & menuNo.ToString() & "）",
+                                "未実装", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+            NavigationManager.OpenForm(screen, Me)
+        Catch ex As Exception
+            MessageBox.Show("画面を開けませんでした。" & vbCrLf & ex.Message, "エラー",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>終了ボタン：画面を閉じる。</summary>
