@@ -21,7 +21,6 @@
             Me.hdrHeader = New Atom.App.Common.HeaderControl()
             Me.pnlFooter = New System.Windows.Forms.Panel()
             Me.btnReconnect = New System.Windows.Forms.Button()
-            Me.btnClose = New System.Windows.Forms.Button()
             Me.pnlContent = New System.Windows.Forms.Panel()
             Me.pnlFooter.SuspendLayout()
             Me.SuspendLayout()
@@ -35,7 +34,7 @@
             '
             'pnlFooter
             '
-            Me.pnlFooter.Controls.Add(Me.btnClose)
+            ' 「閉じる」はヘッダーへ移した。フッターは再接続のみ。
             Me.pnlFooter.Controls.Add(Me.btnReconnect)
             Me.pnlFooter.Dock = System.Windows.Forms.DockStyle.Bottom
             Me.pnlFooter.Name = "pnlFooter"
@@ -48,18 +47,9 @@
             Me.btnReconnect.Dock = System.Windows.Forms.DockStyle.Right
             Me.btnReconnect.Name = "btnReconnect"
             Me.btnReconnect.Size = New System.Drawing.Size(100, 30)
-            Me.btnReconnect.TabIndex = 1
+            Me.btnReconnect.TabIndex = 0
             Me.btnReconnect.Text = "再接続"
             Me.btnReconnect.UseVisualStyleBackColor = True
-            '
-            'btnClose
-            '
-            Me.btnClose.Dock = System.Windows.Forms.DockStyle.Right
-            Me.btnClose.Name = "btnClose"
-            Me.btnClose.Size = New System.Drawing.Size(100, 30)
-            Me.btnClose.TabIndex = 0
-            Me.btnClose.Text = "閉じる"
-            Me.btnClose.UseVisualStyleBackColor = True
             '
             'pnlContent
             '
@@ -88,7 +78,6 @@
         Friend WithEvents hdrHeader As Atom.App.Common.HeaderControl
         Friend WithEvents pnlFooter As System.Windows.Forms.Panel
         Friend WithEvents btnReconnect As System.Windows.Forms.Button
-        Friend WithEvents btnClose As System.Windows.Forms.Button
         Protected Friend WithEvents pnlContent As System.Windows.Forms.Panel
     End Class
 End Namespace

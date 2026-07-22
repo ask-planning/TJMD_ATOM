@@ -19,8 +19,18 @@ Namespace Forms.Expense
         Public Sub New()
             InitializeComponent()
             Me.MenuNo = 907
-            Me.SetupAppearance()
         End Sub
+#End Region
+
+#Region "拡張ポイント"
+        ''' <summary>この画面のヘッダー設定：タイトル「輸入経費コード登録」・背景色オレンジ・「閉じる」のみ。</summary>
+        Protected Overrides Function CreateHeaderConfig() As HeaderConfig
+            Dim config As New HeaderConfig()
+            config.Title = "輸入経費コード登録"
+            config.HeaderBackColor = ColorTranslator.FromHtml("#FF8040")
+            config.Buttons.Add(New HeaderButton("閉じる", AddressOf Me.OnCloseRequested))
+            Return config
+        End Function
 #End Region
 
 #Region "イベントハンドラー"
@@ -35,17 +45,26 @@ Namespace Forms.Expense
         Private Sub OnGridDataError(sender As Object, e As DataGridViewDataErrorEventArgs) Handles dgvList.DataError
             e.ThrowException = False
         End Sub
+
+        Private Sub OnGridCellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs) Handles dgvList.CellFormatting
+            ' 伝票コード列：セル確定表示はコードのみにする（生値が「コード　名称」なので先頭のコードを取り出す）
+            If e.ColumnIndex >= 0 AndAlso Me.dgvList.Columns(e.ColumnIndex).Name = "colDenpyo" AndAlso e.Value IsNot Nothing Then
+                Dim raw As String = Convert.ToString(e.Value)
+                ' 全角スペース／半角スペースどちらの区切りでも先頭部分を取り出す
+                Dim head As String = raw.Split(New Char() {"　"c, " "c})(0).Trim()
+                Dim codeValue As Integer
+                ' 数値化できれば4桁ゼロ埋め、できなければ取り出した文字をそのまま
+                If Integer.TryParse(head, codeValue) Then
+                    e.Value = codeValue.ToString("D4")
+                Else
+                    e.Value = head
+                End If
+                e.FormattingApplied = True
+            End If
+        End Sub
 #End Region
 
 #Region "内部メソッド"
-        ''' <summary>入力列（伝票コード/区分/保険対象）のセルに背景色を付ける。</summary>
-        Private Sub SetupAppearance()
-            ' 入力欄の背景色（うすい緑）
-            Dim inputBack As Color = Color.FromArgb(226, 240, 217)
-            Me.colDenpyo.DefaultCellStyle.BackColor = inputBack
-            Me.colKbn.DefaultCellStyle.BackColor = inputBack
-            Me.colHoken.DefaultCellStyle.BackColor = inputBack
-        End Sub
 
         ''' <summary>伝票コード・区分のコンボ候補をマスタから設定する（取得失敗時は空のまま）。</summary>
         Private Sub SetupCombos()
@@ -84,10 +103,9 @@ Namespace Forms.Expense
                 Me.bsExpense.DataMember = ""
                 Me.bsExpense.DataSource = Me._table
             Catch ex As Exception
-                ' 取得失敗時：原因を通知し、空スキーマ（デザインの列）を表示
-                Me._table = Me.expenseDataSet.ExpenseCode
+                ' 取得失敗時：原因を通知し、一覧は空にする（列はデザイナー定義のまま残る）
                 Me.bsExpense.DataMember = ""
-                Me.bsExpense.DataSource = Me._table
+                Me.bsExpense.DataSource = Nothing
                 MessageBox.Show("一覧の取得に失敗しました。" & vbCrLf & ex.Message, "読み込み",
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
