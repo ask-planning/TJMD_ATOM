@@ -1,0 +1,42 @@
+﻿<%@ Master Language="vb" AutoEventWireup="false" CodeBehind="Site.Master.vb" Inherits="Atom.Web.SiteMaster" %>
+<%@ Register Src="~/Controls/HeaderControl.ascx" TagPrefix="atom" TagName="Header" %>
+<!DOCTYPE html>
+<html lang="ja">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ATOM</title>
+    <%-- コード式ではなく runat="server" にしています。
+         コード式だと Visual Studio のデザイナが解決できず、プレビューに CSS が効かないためです。 --%>
+    <link rel="stylesheet" href="~/Content/site.css" runat="server" />
+    <asp:ContentPlaceHolder ID="cphHead" runat="server" />
+</head>
+<body>
+    <form id="frmMain" runat="server">
+        <asp:ScriptManager ID="smMain" runat="server" />
+
+        <atom:Header ID="hdrHeader" runat="server" />
+
+        <%-- メッセージ領域は UpdatePanel で囲みます。
+             囲まないと、画面側の部分更新（UpdatePanel 内のボタン操作）では
+             この領域がブラウザへ送られず、メッセージが表示されません。
+             UpdateMode="Always" にして、部分更新のたびに必ず作り直します。 --%>
+        <asp:UpdatePanel ID="upnMessage" runat="server" UpdateMode="Always">
+            <ContentTemplate>
+                <asp:Panel ID="pnlMessage" runat="server" CssClass="atom-message" Visible="false">
+                    <asp:Literal ID="litMessage" runat="server" Mode="Encode" />
+                </asp:Panel>
+            </ContentTemplate>
+        </asp:UpdatePanel>
+
+        <main class="atom-content">
+            <asp:ContentPlaceHolder ID="cphContent" runat="server" />
+        </main>
+
+        <%-- script タグに runat="server" を付けると、ASP.NET が
+             サーバー側コードの読み込みとみなして .js をコンパイルしようとするため、
+             ここはコード式で URL を解決します。 --%>
+        <script src="<%: ResolveUrl("~/Scripts/atom.js") %>"></script>
+    </form>
+</body>
+</html>
