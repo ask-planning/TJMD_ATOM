@@ -1,0 +1,297 @@
+﻿@charset "utf-8";
+
+/* ===== 全体 ===== */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: "Meiryo UI", "Yu Gothic UI", sans-serif;
+    font-size: 13px;
+    color: #222;
+    background-color: #f4f5f7;
+}
+
+body > form {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+/* ===== ヘッダー ===== */
+.atom-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 16px 6px 16px;
+    background-color: #1f4e79;
+    color: #fff;
+}
+
+.atom-header-title {
+    font-size: 17px;
+    font-weight: bold;
+    text-align: left;
+}
+
+.atom-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.atom-header-name {
+    font-size: 12px;
+}
+
+.atom-header-button {
+    display: inline-block;
+    padding: 4px 14px;
+    border: 1px solid rgba(255, 255, 255, .7);
+    border-radius: 3px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.atom-header-button:hover {
+    background-color: rgba(255, 255, 255, .18);
+}
+
+/* ===== メッセージ領域 ===== */
+.atom-message {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+.atom-message-info {
+    background-color: #e7f1fb;
+    border-bottom: 1px solid #b9d4ef;
+    color: #14456f;
+}
+
+.atom-message-error {
+    background-color: #fdeaea;
+    border-bottom: 1px solid #f0b8b8;
+    color: #8a1f1f;
+}
+
+/* ===== 本体 ===== */
+.atom-content {
+    flex: 1 1 auto;
+    padding: 16px;
+}
+
+/* ===== フッター ===== */
+.atom-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background-color: #e9ecef;
+    border-top: 1px solid #ced4da;
+}
+
+.atom-footer-button {
+    padding: 5px 18px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.atom-footer-version {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+/* ===== メニュー画面 ===== */
+.menu-root {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.menu-block {
+    flex: 0 0 auto;
+    min-width: 240px;
+    padding: 10px 12px 14px 12px;
+    background-color: #fff;
+    border: 2px solid #c0392b;
+    border-radius: 4px;
+}
+
+.menu-block-title {
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #c0392b;
+    border-bottom: 1px solid #f0d0cc;
+}
+
+.menu-block-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 216px;
+    padding: 9px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #adb5bd;
+    border-radius: 3px;
+    color: #212529;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.menu-button:hover {
+    background-color: #e2e6ea;
+    border-color: #6c757d;
+}
+
+.menu-button.aspNetDisabled,
+a.menu-button:not([href]) {
+    background-color: #f1f3f5;
+    border-color: #dee2e6;
+    color: #adb5bd;
+    cursor: default;
+    pointer-events: none;
+}
+
+.menu-button-status {
+    font-size: 11px;
+    color: #868e96;
+    white-space: nowrap;
+}
+
+/* ===== 一覧（GridView） ===== */
+.atom-grid {
+    border-collapse: collapse;
+    background-color: #fff;
+    border: 1px solid #adb5bd;
+}
+
+.atom-grid th {
+    padding: 6px 10px;
+    background-color: #dfe3e8;
+    border: 1px solid #adb5bd;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.atom-grid td {
+    padding: 3px 6px;
+    border: 1px solid #ced4da;
+    vertical-align: middle;
+}
+
+.atom-grid tr:nth-child(even) td {
+    background-color: #fafbfc;
+}
+
+.atom-grid tfoot td {
+    background-color: #eef3f8;
+    border-top: 2px solid #adb5bd;
+}
+
+.atom-grid-link {
+    color: #1f4e79;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.atom-grid-link:hover {
+    text-decoration: underline;
+}
+
+/* 伝票コード列は黄色背景（旧 DataGridViewComboBoxColumn の見た目に合わせる） */
+.atom-grid td.cell-code {
+    background-color: #ffffcc;
+}
+
+.atom-grid tr:nth-child(even) td.cell-code {
+    background-color: #ffffcc;
+}
+
+/* ===== 入力欄 ===== */
+.atom-grid input[type="text"],
+.atom-grid select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 3px 4px;
+    border: 1px solid #adb5bd;
+    box-sizing: border-box;
+}
+
+.input-code {
+    width: 150px;
+    background-color: #ffffcc;
+}
+
+.input-code:disabled {
+    color: #212529;
+    background-color: #ffffcc;
+}
+
+.input-name {
+    width: 260px;
+}
+
+.input-ref {
+    width: 120px;
+}
+
+.input-kubun {
+    width: 80px;
+}
+
+/* ===== 操作ボタン ===== */
+.atom-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.atom-button,
+.atom-button-primary {
+    padding: 6px 22px;
+    font-family: inherit;
+    font-size: 13px;
+    border: 1px solid #adb5bd;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.atom-button {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.atom-button:hover {
+    background-color: #e2e6ea;
+}
+
+.atom-button-primary {
+    background-color: #1f4e79;
+    border-color: #143a5c;
+    color: #fff;
+}
+
+.atom-button-primary:hover {
+    background-color: #17608f;
+}
+
+/* 参照専用のセル */
+.atom-grid td.cell-readonly {
+    color: #6c757d;
+    font-size: 12px;
+    white-space: nowrap;
+}

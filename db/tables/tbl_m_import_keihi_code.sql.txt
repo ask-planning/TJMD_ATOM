@@ -1,1 +1,0 @@
--- tbl_m_import_keihi_code : 経費コードマスタ（列: pk_keihi_code, keihi_code_text, keihi_kbn, keihi_code_ref, update_ymd, update_login）※実定義はSQL Serverから取得

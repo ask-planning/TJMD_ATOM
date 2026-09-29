@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C1000000-0000-4000-8000-00000000000A}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Atom.Core", "src\Atom.Core\Atom.Core.vbproj", "{A1000000-0000-4000-8000-000000000001}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Atom.Data", "src\Atom.Data\Atom.Data.vbproj", "{A1000000-0000-4000-8000-000000000002}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Atom.Mail", "src\Atom.Mail\Atom.Mail.vbproj", "{A1000000-0000-4000-8000-000000000003}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Atom.Report", "src\Atom.Report\Atom.Report.vbproj", "{A1000000-0000-4000-8000-000000000004}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Atom.Tests", "src\Atom.Tests\Atom.Tests.vbproj", "{A1000000-0000-4000-8000-000000000006}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Atom.Web", "src\Atom.Web\Atom.Web.vbproj", "{B1D6A5F2-7C4E-4B21-9A31-6E9F0C2D5A10}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1000000-0000-4000-8000-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1000000-0000-4000-8000-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1000000-0000-4000-8000-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1D6A5F2-7C4E-4B21-9A31-6E9F0C2D5A10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1D6A5F2-7C4E-4B21-9A31-6E9F0C2D5A10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1D6A5F2-7C4E-4B21-9A31-6E9F0C2D5A10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1D6A5F2-7C4E-4B21-9A31-6E9F0C2D5A10}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A1000000-0000-4000-8000-000000000001} = {C1000000-0000-4000-8000-00000000000A}
+		{A1000000-0000-4000-8000-000000000002} = {C1000000-0000-4000-8000-00000000000A}
+		{A1000000-0000-4000-8000-000000000003} = {C1000000-0000-4000-8000-00000000000A}
+		{A1000000-0000-4000-8000-000000000004} = {C1000000-0000-4000-8000-00000000000A}
+		{A1000000-0000-4000-8000-000000000006} = {C1000000-0000-4000-8000-00000000000A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D1000000-0000-4000-8000-00000000000F}
+	EndGlobalSection
+EndGlobal

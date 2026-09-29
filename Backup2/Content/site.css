@@ -1,0 +1,485 @@
+﻿@charset "utf-8";
+
+/* ATOM 共通スタイル
+   色は共通変数として一元管理し、各画面で HEX を直接書きません。 */
+
+:root {
+    --atom-header-bg: #400080;
+    --atom-header-text: #FFFFFF;
+    --atom-version-text: #FFFF00;
+    --atom-button-bg: #E1E1E1;
+    --atom-button-border: #ADADAD;
+    --atom-user-border: #000080;
+
+    --atom-menu-blue-bg: #99CCFF;
+    --atom-menu-pink-bg: #FF80FF;
+    --atom-menu-button-bg: #E1E1E1;
+    --atom-menu-border: #0000A0;
+    --atom-menu-blue-text: #0000A0;
+
+    --atom-body-bg: #FFFFFF;
+    --atom-text: #222222;
+    --atom-disabled-text: #808080;
+    --atom-error-bg: #FFE6E6;
+    --atom-error-text: #A00000;
+    --atom-information-bg: #E6F0FF;
+    --atom-information-text: #003080;
+
+    --atom-header-height: 48px;
+    --atom-block-width: 280px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--atom-body-bg);
+    color: var(--atom-text);
+    font-family: "Meiryo", "Yu Gothic", "MS PGothic", sans-serif;
+    font-size: 14px;
+}
+
+/* ------------------------------------------------------------------
+   共通ヘッダー
+   ------------------------------------------------------------------ */
+
+.atom-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: var(--atom-header-height);
+    padding: 0 8px;
+    background-color: var(--atom-header-bg);
+    color: var(--atom-header-text);
+}
+
+.atom-header-icons {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+}
+
+.atom-header-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--atom-button-border);
+    background-color: var(--atom-button-bg);
+    cursor: pointer;
+}
+
+.atom-header-icon:hover {
+    filter: brightness(0.95);
+}
+
+.atom-header-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.atom-header-logo {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.atom-header-logo-main {
+    flex: 0 0 auto;
+    padding: 0 8px;
+    border: 1px solid var(--atom-header-text);
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.atom-header-logo-sub {
+    flex: 1 1 auto;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.atom-header-logo-version {
+    flex: 0 0 auto;
+    color: var(--atom-version-text);
+    font-size: 15px;
+    font-style: italic;
+    font-weight: bold;
+}
+
+.atom-header-screen {
+    overflow: hidden;
+    font-size: 20px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.atom-header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+}
+
+.atom-header-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--atom-button-border);
+    background-color: var(--atom-button-bg);
+    color: var(--atom-header-bg);
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.atom-header-action:hover {
+    filter: brightness(0.95);
+}
+
+.atom-header-user {
+    flex: 0 0 auto;
+}
+
+.atom-header-user-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+    max-width: 240px;
+    height: 32px;
+    padding: 0 8px;
+    overflow: hidden;
+    border: 1px solid var(--atom-user-border);
+    color: var(--atom-header-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------
+   メッセージ領域
+   ------------------------------------------------------------------ */
+
+.atom-message {
+    margin: 8px 16px 0;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+}
+
+.atom-message-information {
+    border-color: var(--atom-information-text);
+    background-color: var(--atom-information-bg);
+    color: var(--atom-information-text);
+}
+
+.atom-message-error {
+    border-color: var(--atom-error-text);
+    background-color: var(--atom-error-bg);
+    color: var(--atom-error-text);
+}
+
+/* ------------------------------------------------------------------
+   コンテンツ
+   ------------------------------------------------------------------ */
+
+.atom-content {
+    padding: 16px;
+}
+
+/* ------------------------------------------------------------------
+   メニュー画面
+   ------------------------------------------------------------------ */
+
+/* 3 列に並べます。どのブロックをどの列へ置くかは画面定義の Column で決めます。
+   列ごとに独立して積み上げるため、隣の列の高さに引きずられた余白ができません。 */
+.atom-menu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.atom-column {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 16px;
+    width: var(--atom-block-width);
+}
+
+.atom-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--atom-menu-border);
+}
+
+.atom-block-blue {
+    background-color: var(--atom-menu-blue-bg);
+}
+
+.atom-block-pink {
+    background-color: var(--atom-menu-pink-bg);
+}
+
+.atom-block-title {
+    margin: 0;
+    padding: 6px 4px;
+    overflow: hidden;
+    border: 1px solid var(--atom-menu-border);
+    background-color: var(--atom-menu-pink-bg);
+    color: var(--atom-menu-blue-text);
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    /* 「上海輸入定期便＆AIR便」のような長い見出しが途中で折り返さないようにする */
+    white-space: nowrap;
+}
+
+.atom-block-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.atom-menu-button {
+    display: block;
+    width: 100%;
+    padding: 8px 4px;
+    border: 1px solid var(--atom-button-border);
+    background-color: var(--atom-menu-button-bg);
+    color: var(--atom-menu-blue-text);
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.atom-menu-button:hover {
+    filter: brightness(0.95);
+}
+
+.atom-menu-button.aspNetDisabled {
+    color: var(--atom-disabled-text);
+    cursor: default;
+}
+
+.atom-menu-status {
+    display: block;
+    color: var(--atom-disabled-text);
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ログアウトは 3 列目（輸入経費入力の下）に置きます */
+.atom-menu-footer {
+    display: flex;
+}
+
+.atom-logout-button {
+    width: 100%;
+    padding: 12px 4px;
+    border: 1px solid var(--atom-button-border);
+    background-color: var(--atom-menu-button-bg);
+    color: var(--atom-text);
+    cursor: pointer;
+    font-size: 16px;
+    text-align: center;
+}
+
+.atom-logout-button:hover {
+    filter: brightness(0.95);
+}
+
+/* ------------------------------------------------------------------
+   入力フォーム（業務画面共通）
+   ------------------------------------------------------------------ */
+
+.atom-form {
+    max-width: 760px;
+    margin: 8px 0 0;
+}
+
+.atom-form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.atom-form-label {
+    flex: 0 0 150px;
+    text-align: right;
+}
+
+.atom-form-field {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.atom-radio-list label {
+    margin-right: 16px;
+}
+
+.atom-select,
+.atom-file {
+    padding: 4px 6px;
+    border: 1px solid var(--atom-button-border);
+    font-size: 14px;
+}
+
+.atom-readonly {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--atom-button-border);
+    background-color: #E9E9E9;
+    color: var(--atom-text);
+}
+
+.atom-form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-left: 162px;
+}
+
+.atom-action-button {
+    min-width: 150px;
+    padding: 10px 8px;
+    border: 1px solid var(--atom-button-border);
+    background-color: var(--atom-menu-button-bg);
+    color: var(--atom-text);
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.atom-action-button:hover {
+    filter: brightness(0.95);
+}
+
+.atom-action-primary {
+    border-color: var(--atom-menu-border);
+    color: var(--atom-menu-blue-text);
+    font-weight: bold;
+}
+
+.atom-action-button[disabled] {
+    color: var(--atom-disabled-text);
+    cursor: default;
+}
+
+/* ------------------------------------------------------------------
+   処理中の表示と確認ダイアログ
+   ------------------------------------------------------------------ */
+
+.atom-processing {
+    display: none;
+    margin: 16px 0 0;
+    padding: 12px;
+    border: 1px solid var(--atom-information-text);
+    background-color: var(--atom-information-bg);
+    color: var(--atom-information-text);
+}
+
+.atom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.atom-modal-box {
+    max-width: 520px;
+    padding: 24px;
+    border: 1px solid var(--atom-menu-border);
+    background-color: var(--atom-body-bg);
+}
+
+.atom-modal-message {
+    margin: 0 0 20px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.atom-modal-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* ------------------------------------------------------------------
+   ログイン画面
+   ------------------------------------------------------------------ */
+
+.atom-login {
+    max-width: 380px;
+    margin: 48px auto 0;
+    padding: 24px;
+    border: 1px solid var(--atom-menu-border);
+}
+
+.atom-login-title {
+    margin: 0 0 16px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.atom-login-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.atom-login-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--atom-button-border);
+    font-size: 16px;
+    ime-mode: disabled;
+}
+
+.atom-login-button {
+    width: 100%;
+    padding: 10px 4px;
+    border: 1px solid var(--atom-button-border);
+    background-color: var(--atom-menu-button-bg);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.atom-validator {
+    color: var(--atom-error-text);
+    font-size: 13px;
+}

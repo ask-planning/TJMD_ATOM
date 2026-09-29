@@ -1,0 +1,51 @@
+﻿{
+  "DefaultHeaderBackColor": "#400080",
+  "Blocks": [
+    {
+      "Title": "上海輸入定期便＆AIR便",
+      "ColorName": "blue",
+      "Column": 1,
+      "Screens": [
+        { "MenuNo": 101, "Title": "INVOICE/PACKING取込み", "Url": "~/Pages/Entry/InvoiceImport.aspx", "HeaderBackColor": "" },
+        { "MenuNo": 102, "Title": "INVOICE確認", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 103, "Title": "INVOICEヘッダー入力", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 104, "Title": "R3購買発注取込", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 105, "Title": "R3購買発注確認", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 106, "Title": "R3在庫転送作成", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 107, "Title": "SAP伝票金額入力", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 108, "Title": "取込結果確認", "Url": "~/Pages/Entry/ImportResult.aspx", "HeaderBackColor": "", "Hidden": true }
+      ]
+    },
+    {
+      "Title": "その他輸入関連",
+      "ColorName": "blue",
+      "Column": 2,
+      "Screens": [
+        { "MenuNo": 201, "Title": "調達R3購買発注取込", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 202, "Title": "調達R3購買発注確認", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 203, "Title": "調達配送手配書作成", "Url": "", "HeaderBackColor": "" }
+      ]
+    },
+    {
+      "Title": "輸入経費入力",
+      "ColorName": "blue",
+      "Column": 3,
+      "Screens": [
+        { "MenuNo": 301, "Title": "諸経費入力", "Url": "", "HeaderBackColor": "" }
+      ]
+    },
+    {
+      "Title": "マスタ関連",
+      "ColorName": "pink",
+      "Column": 2,
+      "Screens": [
+        { "MenuNo": 902, "Title": "社内参照番号発番", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 903, "Title": "項目マスタ", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 904, "Title": "カレンダー", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 905, "Title": "仕入先マスタ登録", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 906, "Title": "商品名称入力", "Url": "", "HeaderBackColor": "" },
+        { "MenuNo": 907, "Title": "輸入経費コード登録", "Url": "", "HeaderBackColor": "" }
+      ]
+    }
+  ]
+}

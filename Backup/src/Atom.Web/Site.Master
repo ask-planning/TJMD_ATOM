@@ -1,0 +1,34 @@
+﻿<%@ Master Language="vb" AutoEventWireup="false" CodeBehind="Site.Master.vb" Inherits="Atom.Web.SiteMaster" %>
+<%@ Register Src="~/Controls/HeaderControl.ascx" TagPrefix="atom" TagName="Header" %>
+<!DOCTYPE html>
+<html lang="ja">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ATOM</title>
+    <link rel="stylesheet" href="<%: ResolveUrl("~/Content/site.css") %>" />
+    <asp:ContentPlaceHolder ID="cphHead" runat="server" />
+</head>
+<body>
+    <form id="frmMain" runat="server">
+        <asp:ScriptManager ID="smMain" runat="server" />
+
+        <atom:Header ID="hdrHeader" runat="server" />
+
+        <asp:Panel ID="pnlMessage" runat="server" CssClass="atom-message" Visible="false">
+            <asp:Literal ID="litMessage" runat="server" Mode="Encode" />
+        </asp:Panel>
+
+        <main class="atom-content">
+            <asp:ContentPlaceHolder ID="cphContent" runat="server" />
+        </main>
+
+        <footer class="atom-footer">
+            <asp:Button ID="btnReconnect" runat="server" Text="再接続" CssClass="atom-footer-button" CausesValidation="false" />
+            <span class="atom-footer-version">
+                <asp:Literal ID="litVersion" runat="server" Mode="Encode" />
+            </span>
+        </footer>
+    </form>
+</body>
+</html>

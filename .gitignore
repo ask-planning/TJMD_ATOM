@@ -1,10 +1,29 @@
-# Visual Studio / .NET
-bin/
-obj/
+# Visual Studio
 .vs/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
+
+# ビルド出力
+[Bb]in/
+[Oo]bj/
+*.dll
+*.pdb
+*.xml
+
+# NuGet
 packages/
-_UpgradeReport_Files/
-*.tmp
-~$*
+*.nupkg
+
+# ASP.NET
+# フォルダ自体は除外せず中身のみ除外する（下の再包含を有効にするため）
+**/App_Data/*
+# 画面定義は設定ファイルなのでコミット対象に含める
+!src/Atom.Web/App_Data/AtomScreens.json
+*.publishsettings
+PublishProfiles/
+
+# 環境ごとの設定（接続文字列を含むため）
+Web.*.config.local
+appsettings.local.json

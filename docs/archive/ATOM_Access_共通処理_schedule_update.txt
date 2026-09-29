@@ -1,0 +1,387 @@
+﻿Function syori_log_create(menu_no As Integer, menu_no_seq As Integer, INVOICE_NO As String, syori_naiyo As String)
+
+    '現在は、不思議な現象が起こるという問い合わせがあるメニューに入れてチェック
+    '購買発注の取込みと、購買発注明細確認、在庫転送作成、スケジュール作成　で使用
+
+    Set cmd.ActiveConnection = conn
+
+    On Error Resume Next
+
+    strSql = "INSERT INTO tbl_t_syori_log ( pk_menu_no, pk_menu_no_seq, invoice_no, syori_naiyo, syori_ymd, syori_login ) "
+    strSql = strSql & "VALUES ( " & menu_no & ", " & menu_no_seq & ", "
+    If Len(INVOICE_NO) > 0 Then
+        strSql = strSql & "'" & INVOICE_NO & "', "
+    Else
+        strSql = strSql & "null, "
+    End If
+    If Len(syori_naiyo) > 0 Then
+        strSql = strSql & "'" & syori_naiyo & "', "
+    Else
+        strSql = strSql & "null, "
+    End If
+    strSql = strSql & "'" & Now() & "', '" & strLoginCode & "' ) "
+
+    With cmd
+        .CommandText = strSql
+        .CommandType = adCmdText
+        .Execute
+    End With
+
+    On Error GoTo 0
+
+    Set cmd = Nothing
+
+
+End Function
+
+Function schedule_update(syori_no As Integer, update_ymd As Date, INVOICE_NO As String, shanghai_chotatsu As Integer)
+
+    'ATOM内の各処理の実行時に、スケジュール表の状況を更新する
+
+    'syori_no:  1,2は無し（別に使用）、3=上海出港、4=上海連絡　書類、　5=上海連絡　ヘッダ、　6=検査品、　7=通関依頼
+    '　　　　　 8=調達メール連絡、　9=調達通関許可連絡、10=配送連絡⇒ロジ、　11=配送連絡⇒工場、　12=配送連絡⇒貿易（日新）
+    '　　　　　13=配送連絡⇒貿易、　14=配送連絡⇒調達、15=保険、　16=ACCESS処理、　17=経費入力
+
+    'shanghai_chotatsu: 1=上海、   2=調達
+
+    If IsNull(INVOICE_NO) Or Len(INVOICE_NO) <= 0 Or INVOICE_NO = "NULL" Then
+        Exit Function
+    End If
+
+    Dim strContainerName As String
+    Dim strTblContainerSize(5) As String
+    Dim intTblCartonQty(5) As Integer
+    Dim datTblHaisoYotei(5) As Date
+    Dim intTblHaisoType(5) As Integer
+    Dim intTblSyukkaHoho(5) As Integer
+    Dim intContainerMax As Integer
+    Dim strAMPM As String
+    Dim intRogisticsNo As Integer
+    Dim intSyurui As Integer
+    Dim strYmdName(17) As String
+    Dim ix_1 As Integer
+
+    Set cmd.ActiveConnection = conn
+
+    strYmdName(0) = ""
+    strYmdName(1) = ""
+    strYmdName(2) = "syukko_ymd"
+    strYmdName(3) = "shanghai_syorui_ymd"
+    strYmdName(4) = "shanghai_header_ymd"
+    strYmdName(5) = "kensa_ymd"
+    strYmdName(6) = "tsukan_irai_ymd"
+    strYmdName(7) = "chotatsu_mail_ymd"
+    strYmdName(8) = "tsukan_kyoka_ymd"
+    strYmdName(9) = "haiso_logi_ymd"
+    strYmdName(10) = "haiso_kojyo_ymd"
+    strYmdName(11) = "haiso_nisshin_ymd"
+    strYmdName(12) = "haiso_boueki_ymd"
+    strYmdName(13) = "haiso_chotatsu_ymd"
+    strYmdName(14) = "hoken_ymd"
+    strYmdName(15) = "access_ymd"
+    strYmdName(16) = "keihi_ymd"
+
+    strContainerName = ""
+    For ix_1 = 0 To 5
+        strTblContainerSize(ix_1) = ""
+        intTblCartonQty(ix_1) = 0
+        datTblHaisoYotei(ix_1) = 0
+        intTblHaisoType(ix_1) = 0
+    Next
+    intContainerMax = 5
+    '上海のINVOICE取込み、または、ロジへの配送手配の場合、カートン数、コンテナ名などを取得
+
+    'カレンダーの更新モードの確認(配送手配書の時)
+    intCalenderMode = 0
+    With cmd
+        .CommandText = "usp_calender_mode_get"
+        .CommandType = adCmdStoredProc
+        .Parameters.Refresh
+        .Execute
+    End With
+    If Not IsNull(cmd.Parameters(1)) Then
+        intCalenderMode = cmd.Parameters(1)
+    End If
+
+    intSyurui = 0
+    If Left(INVOICE_NO, 3) = "SJ-" Or Left(INVOICE_NO, 3) = "YJ-" Then
+
+        strContainerName = "上海田島"
+        With cmd
+            .CommandText = "usp_shanghai_invoice_header_pickup"
+            .CommandType = adCmdStoredProc
+            .Parameters.Refresh
+            .Parameters(1) = INVOICE_NO
+        End With
+
+        ix_1 = 0
+        'Debug.Print strSql
+        Set rs1 = cmd.Execute(intRcnt)
+        If intRcnt <> 0 Then
+            rs1.MoveFirst
+            intSyurui = rs1![syukka_hoho].Value + 1
+            datBLDate = rs1![BL_DATE].Value
+            Do Until rs1.EOF Or n > 5
+                If rs1![haiso_type_text].Value Like "*ロジ*" Then
+'Debug.Print rs1![container_type_text].Value & "/ymd=" & rs1![haiso_yotei_ymd].Value & "/ctn=" & rs1![total_carton].Value & "/type=" & rs1![haiso_type].Value
+                    strTblContainerSize(ix_1) = rs1![container_type_text].Value
+                    datTblHaisoYotei(ix_1) = rs1![haiso_yotei_ymd].Value
+                    intTblCartonQty(ix_1) = rs1![total_carton].Value
+                    intTblHaisoType(ix_1) = rs1![haiso_type].Value
+                    ix_1 = ix_1 + 1
+                    'intContainerMax = ix_1
+                End If
+                rs1.MoveNext
+            Loop
+        End If
+        rs1.Close
+        If intSyurui = 0 Then
+            If Left(INVOICE_NO, 3) = "SJ-" And Mid(INVOICE_NO, 5, 1) = "2" Then
+                intSyurui = 99
+            Else
+                If Mid(INVOICE_NO, 4, 1) = "R" Then
+                    intSyurui = 2
+                Else
+                    intSyurui = 1
+                End If
+            End If
+        End If
+
+    Else
+
+        strSql = "SELECT tbl_t_chotatsu_invoice_header.BL_DATE, tbl_t_chotatsu_invoice_header.carton_qty, tbl_m_invoice_default.shiiresaki_name_s, "
+        strSql = strSql & "tbl_t_chotatsu_invoice_header.haiso_yotei_ymd, tbl_m_invoice_default.shinchoku_jyokyo_syurui, "
+        strSql = strSql & "View__haiso_type.haiso_type_text FROM tbl_t_chotatsu_invoice_header INNER JOIN tbl_m_invoice_default ON "
+        strSql = strSql & "tbl_t_chotatsu_invoice_header.shiiresaki_code = tbl_m_invoice_default.pk_shiiresaki_code "
+        strSql = strSql & "INNER JOIN View__haiso_type ON tbl_t_chotatsu_invoice_header.haiso_type = View__haiso_type.haiso_type "
+        strSql = strSql & "WHERE tbl_t_chotatsu_invoice_header.pk_invoice_no_main = '" & INVOICE_NO & "' "
+
+        With cmd
+            .CommandText = strSql
+            .CommandType = adCmdText
+        End With
+        Set rs1 = cmd.Execute(intRcnt)
+        If intRcnt <> 0 Then
+            rs1.MoveFirst
+            strContainerName = rs1![shiiresaki_name_s].Value
+            If rs1![haiso_type_text].Value Like "*ロジ*" Then
+                If Not IsNull(rs1![carton_qty].Value) Then
+                    intTblCartonQty(0) = rs1![carton_qty].Value
+                End If
+                If Not IsNull(rs1![haiso_yotei_ymd].Value) Then
+                    datTblHaisoYotei(0) = rs1![haiso_yotei_ymd].Value
+                End If
+            End If
+            intSyurui = rs1![shinchoku_jyokyo_syurui].Value
+            If Not IsNull(rs1![BL_DATE].Value) Then
+                datBLDate = rs1![BL_DATE].Value
+            End If
+            intContainerMax = 1
+        End If
+        rs1.Close
+        If intSyurui = 0 Then
+            intSyurui = 3
+        End If
+
+    End If
+
+    'カレンダーが自動更新モードで、処理が配送手配書の時、カレンダーの更新
+    If intCalenderMode = 1 And syori_no = 10 And Len(strContainerName) > 0 Then
+
+        For ix_1 = 0 To intContainerMax - 1
+            If intTblCartonQty(ix_1) <> 0 Then
+
+                '配送タイプのチェック
+                intRogisticsNo = 1
+                With cmd
+                    .CommandText = "usp_koumoku_contents_get"
+                    .CommandType = adCmdStoredProc
+                    .Parameters.Refresh
+                    .Parameters(1) = "HKB"
+                    .Parameters(2) = intTblHaisoType(ix_1)
+                    .Execute
+                End With
+                'ロジは何番目の配送先か？
+                If cmd.Parameters(4) = "1" Then
+                    '１番目　⇒　午前便
+                    intRogisticsNo = 1
+                Else
+                    If (Not IsNull(cmd.Parameters(5)) And cmd.Parameters(5) = "1") _
+                        Or (Not IsNull(cmd.Parameters(6)) And cmd.Parameters(6) = "1") Then
+                        '２番目、３番目　⇒　午後便
+                        intRogisticsNo = 2
+                    End If
+                End If
+
+                'カレンダーをチェックして、該当日の配送予定が空だったら、INVOICE情報を更新する
+                'チェック用フラグに｢NG｣をセット
+                strAMPM = "NG"
+                With cmd
+                    .CommandText = "usp_TJM_master_calender_AM_PM_sonzai_check"
+                    .CommandType = adCmdStoredProc
+                    .Parameters.Refresh
+                    .Parameters(1) = datTblHaisoYotei(ix_1)
+                    .Execute
+                End With
+
+                'ロジが第１配送先の場合、午前をチェック
+                If intRogisticsNo = 1 Then
+                    If (Not IsNull(cmd.Parameters(2)) And cmd.Parameters(2) = INVOICE_NO) _
+                        Or (Not IsNull(cmd.Parameters(3)) And cmd.Parameters(3) = INVOICE_NO) _
+                        Or (Not IsNull(cmd.Parameters(2)) And cmd.Parameters(2) = strContainerName) _
+                        Or (Not IsNull(cmd.Parameters(3)) And cmd.Parameters(3) = strContainerName) Then
+                        '二つとも埋まっている、既に該当INVOICEは登録済みだったら｢NG｣
+                        strAMPM = "NG"
+                    Else
+                        If IsNull(cmd.Parameters(2)) Then
+                            '午前１番目
+                            strAMPM = "AM"
+                        Else
+                            If IsNull(cmd.Parameters(3)) Then
+                                '午前２番目
+                                strAMPM = "AM2"
+                            Else
+                                strAMPM = "NG"
+                            End If
+                        End If
+                    End If
+                Else
+                    'ロジが第２、第３配送先の場合、午後をチェック
+                    If (Not IsNull(cmd.Parameters(4)) And cmd.Parameters(4) = INVOICE_NO) _
+                        Or (Not IsNull(cmd.Parameters(5)) And cmd.Parameters(5) = INVOICE_NO) _
+                        Or (Not IsNull(cmd.Parameters(4)) And cmd.Parameters(4) = strContainerName) _
+                        Or (Not IsNull(cmd.Parameters(5)) And cmd.Parameters(5) = strContainerName) Then
+                        '二つとも埋まっている、既に該当INVOICEは登録済みだったら｢NG｣
+                        strAMPM = "NG"
+                    Else
+                        If IsNull(cmd.Parameters(4)) Then
+                            '午後１番目
+                            strAMPM = "PM"
+                        Else
+                            If IsNull(cmd.Parameters(5)) Then
+                                '午後２番目
+                                strAMPM = "PM2"
+                            Else
+                                strAMPM = "NG"
+                            End If
+                        End If
+                    End If
+                End If
+
+                'If intTblHaisoType(ix_1) = 2 Or intTblHaisoType(ix_1) = 7 Then
+                '    If IsNull(cmd.Parameters(4)) Then
+                '        strAMPM = "PM"
+                '    Else
+                '        If IsNull(cmd.Parameters(5)) Then
+                '            strAMPM = "PM2"
+                '        Else
+                '            strAMPM = "NG"
+                '        End If
+                '    End If
+                'End If
+
+                'チェック用フラグがNGじゃなかったら、カレンダーの更新
+                If strAMPM <> "NG" Then
+                    strSql = "UPDATE TJM_master.dbo.tbl_m_calender_jigyosyo SET container_" & strAMPM & " = '" & strContainerName & "', "
+                    If Len(INVOICE_NO) > 0 Then
+                        strSql = strSql & "invoice_no_" & strAMPM & " = '" & INVOICE_NO & "', "
+                    Else
+                        strSql = strSql & "invoice_no_" & strAMPM & " = null, "
+                    End If
+
+                    If Len(strTblContainerSize(ix_1)) > 0 Then
+                        strSql = strSql & "container_size_" & strAMPM & " = '" & strTblContainerSize(ix_1) & "', "
+                    Else
+                        strSql = strSql & "container_size_" & strAMPM & " = null, "
+                    End If
+                    strSql = strSql & "carton_qty_" & strAMPM & " = " & intTblCartonQty(ix_1) & " WHERE pk_yymmdd = '" & datTblHaisoYotei(ix_1) & "' "
+                    If strAMPM = "PM" Then
+                        strSql = strSql & "AND ( container_PM is null OR Len(container_PM) <= 0 ) "
+                    End If
+
+                    'Debug.Print strSql
+                    With cmd
+                        .CommandText = strSql
+                        .CommandType = adCmdText
+                        .Execute
+                    End With
+
+
+                    On Error Resume Next
+                    Call syori_log_create(99, 99, INVOICE_NO, "カレンダー自動更新 : " & strContainerName & " " & strAMPM)
+                    On Error GoTo 0
+
+                End If
+            End If
+
+        Next
+    End If
+
+    '上海からの書類取込み、調達のヘッダ入力時、BL_DATEの取得
+    If shanghai_chotatsu = 1 And (syori_no = 3 Or syori_no = 4 Or syori_no = 5) Then
+        With cmd
+            .CommandText = "usp_shanghai_invoice_header_get"
+            .CommandType = adCmdStoredProc
+            .Parameters.Refresh
+            .Parameters(1) = 1
+            .Parameters(2) = INVOICE_NO
+            .Execute
+        End With
+        If Not IsNull(cmd.Parameters(3)) Then
+            datBLDate = cmd.Parameters(3)
+        End If
+    End If
+
+    '進捗状況データがあるか、無かったら追加
+    With cmd
+        .CommandText = "usp_shinchoku_jyokyo_sonzai_check"
+        .CommandType = adCmdStoredProc
+        .Parameters.Refresh
+        .Parameters(1) = INVOICE_NO
+        .Execute
+    End With
+    If IsNull(cmd.Parameters(2)) Or cmd.Parameters(2) = 0 Then
+
+        strSql = "INSERT INTO tbl_t_import_progress (pk_invoice_no_main, syurui, syukko_ymd, update_ymd, update_login) "
+        strSql = strSql & "VALUES ('" & INVOICE_NO & "'," & intSyurui & ",'" & datBLDate & "', '" & Now() & "', '" & strLoginCode & "' ) "
+        With cmd
+            .CommandText = strSql
+            .CommandType = adCmdText
+            .Execute
+        End With
+    End If
+
+    ix_1 = syori_no - 1
+    '処理NO別にスケジュール表、カレンダーを更新
+    '出港日、上海書類などは、まとめて処理
+    Select Case syori_no
+        Case 3, 4, 5
+            strSql = "UPDATE tbl_t_import_progress SET syukko_ymd = '" & datBLDate & "' ,"
+            If shanghai_chotatsu = 1 Then
+                strSql = strSql & "shanghai_syorui_ymd = '" & Date & "' , shanghai_header_ymd = '" & Date & "',  "
+                strSql = strSql & "shinchoku_jyokyo = 3 "
+            Else
+                strSql = strSql & "shinchoku_jyokyo = 1 "
+            End If
+        Case 12, 13
+            strSql = "UPDATE tbl_t_import_progress SET haiso_nisshin_ymd = '" & Date & "', haiso_boueki_ymd = '" & Date & "', "
+            strSql = strSql & "shinchoku_jyokyo = 11 "
+        Case Else
+            strSql = "UPDATE tbl_t_import_progress SET " & strYmdName(ix_1) & " = '" & Date & "', "
+            strSql = strSql & "shinchoku_jyokyo = " & syori_no - 2 & " "
+    End Select
+    strSql = strSql & ", update_ymd = '" & Now() & "', update_login = '" & strLoginCode & "' "
+    strSql = strSql & "WHERE pk_invoice_no_main = '" & INVOICE_NO & "' AND " & strYmdName(ix_1) & " IS NULL "
+
+    With cmd
+        .CommandText = strSql
+        .CommandType = adCmdText
+        .Execute
+    End With
+    'Debug.Print strSql
+
+    Set rs1 = Nothing
+    Set cmd = Nothing
+
+
+End Function

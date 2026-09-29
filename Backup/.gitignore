@@ -1,0 +1,26 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ビルド出力
+[Bb]in/
+[Oo]bj/
+*.dll
+*.pdb
+*.xml
+
+# NuGet
+packages/
+*.nupkg
+
+# ASP.NET
+App_Data/
+*.publishsettings
+PublishProfiles/
+
+# 環境ごとの設定（接続文字列を含むため）
+Web.*.config.local
+appsettings.local.json
