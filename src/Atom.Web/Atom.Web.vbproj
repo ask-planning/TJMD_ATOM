@@ -113,6 +113,13 @@
     <Compile Include="Pages\Entry\InvoiceImport.aspx.designer.vb">
       <DependentUpon>InvoiceImport.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Pages\Report\SvfConnectionTest.aspx.vb">
+      <DependentUpon>SvfConnectionTest.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Pages\Report\SvfConnectionTest.aspx.designer.vb">
+      <DependentUpon>SvfConnectionTest.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Pages\Common\Login.aspx.vb">
       <DependentUpon>Login.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
@@ -135,6 +142,7 @@
     <Content Include="Controls\HeaderControl.ascx" />
     <Content Include="Default.aspx" />
     <Content Include="Pages\Common\Login.aspx" />
+    <Content Include="Pages\Report\SvfConnectionTest.aspx" />
     <Content Include="Pages\Entry\ImportResult.aspx" />
     <Content Include="Pages\Entry\InvoiceImport.aspx" />
     <Content Include="Scripts\atom.js" />
