@@ -1,0 +1,48 @@
+# 改行コードの扱いを決めます。
+#
+# このリポジトリのソースは CRLF です（docs/00_開発基本方針.md）。
+# 開発者ごとの git の設定に左右されないよう、ここで明示します。
+#
+# text=auto … テキストファイルとして扱い、リポジトリには LF で記録する
+# eol=crlf  … 作業フォルダへ取り出すときは CRLF にする
+#
+# これにより「中身は同じなのに改行だけ違う」差分が出なくなります。
+
+* text=auto eol=crlf
+
+# ------------------------------------------------------------------
+# バイナリ。変換しません。
+# ------------------------------------------------------------------
+*.adp  binary
+*.mdb  binary
+*.accdb binary
+
+*.dll  binary
+*.exe  binary
+*.pdb  binary
+*.nupkg binary
+*.p7s  binary
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.bmp  binary
+
+*.xls  binary
+*.xlsx binary
+*.xlsm binary
+*.doc  binary
+*.docx binary
+*.ppt  binary
+*.pptx binary
+*.pdf  binary
+
+# ------------------------------------------------------------------
+# SVF 連携用のファイル。
+# Shift_JIS（CP932）・CRLF・BOM なしで、バイト単位で保たれる必要があります。
+# git に一切変換させないため text を外します。
+# ------------------------------------------------------------------
+tools/svf/*.txt -text
+tools/svf/schema.ini -text
