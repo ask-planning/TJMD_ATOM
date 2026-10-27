@@ -46,7 +46,36 @@ WHERE o.name IN (
         'View_shanghai_invoice_no_packing',
         'View_shanghai_import_invoice_no',
         'View_shanghai_import_invoice_no_packing',
-        'View__haiso_type'
+        'View__haiso_type',
+        -- INVOICEヘッダー入力（menuNo=103）
+        'usp_shanghai_invoice_sonzai_check',
+        'usp_shanghai_invoice_header_sub_temp_create',
+        'usp_shanghai_invoice_header_sub_update',
+        'usp_shanghai_invoice_container_count',
+        'usp_shanghai_ref_no_get',
+        'usp_shanghai_ref_no_update',
+        -- 登録の後続処理（§8.6）と明細更新（§9）。引数が未確認
+        'usp_shanghai_invoice_shikyu_hosozai_nouki_update',
+        'usp_poem_makishin_nyu_syukko_update',
+        'usp_shanghai_container_type_check',
+        'usp_shanghai_container_no_update',
+        'View__container_type',
+        'View__invoice_no_main',
+        'View__syukka_hoho',
+        'View__otsunaka',
+        'View_shanghai_haiso_tehai_pickup',
+        -- 101 の中で使われているが定義が未確認のビュー
+        'View_shanghai_special_hinmoku',
+        'View_shanghai_import_suryo_check_invoice',
+        'View_shanghai_import_suryo_check_packing',
+        'View_shanghai_import_invoice_check_tajima_po',
+        'View_shanghai_import_packing_check_tajima_po',
+        'View_shanghai_import_packing_check_invoice_no',
+        'View_shanghai_packing_carton_no',
+        'View_shanghai_invoice_total_amount',
+        'View_shanghai_invoice_container_no',
+        'View_shanghai_invoice_bl_date_check',
+        'View_shanghai_packing_total_suryo'
       )
 ORDER BY o.type_desc, o.name;
 GO
@@ -83,7 +112,18 @@ WHERE o.name IN (
         'usp_shanghai_invoice_header_pickup',
         'usp_shanghai_invoice_header_get',
         'usp_shinchoku_jyokyo_sonzai_check',
-        'usp_TJM_master_calender_AM_PM_sonzai_check'
+        'usp_TJM_master_calender_AM_PM_sonzai_check',
+        -- INVOICEヘッダー入力（menuNo=103）
+        'usp_shanghai_invoice_sonzai_check',
+        'usp_shanghai_invoice_header_sub_temp_create',
+        'usp_shanghai_invoice_header_sub_update',
+        'usp_shanghai_invoice_container_count',
+        'usp_shanghai_ref_no_get',
+        'usp_shanghai_ref_no_update',
+        'usp_shanghai_invoice_shikyu_hosozai_nouki_update',
+        'usp_poem_makishin_nyu_syukko_update',
+        'usp_shanghai_container_type_check',
+        'usp_shanghai_container_no_update'
       )
 ORDER BY o.name, p.parameter_id;
 GO
@@ -214,4 +254,168 @@ FROM sys.sql_modules AS m
 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
 WHERE m.definition LIKE '%tbl_t_shanghai_invoice_meisai%'
 ORDER BY o.type_desc, o.name;
+*/
+
+-- ==================================================================
+-- 補助2. 103 の明細が入る一時テーブルを探す
+--    usp_shanghai_invoice_header_sub_temp_create が何を作るのかが
+--    旧 Access の VBA からは読み取れないため、DB 側から特定します。
+--    結果に出たテーブル名を、上の「3. 列定義」の IN へ足してください。
+-- ==================================================================
+/*
+USE ATOM;
+
+-- 名前に「header_sub」を含むテーブル・ビュー
+SELECT name, type_desc
+FROM sys.objects
+WHERE type IN ('U', 'V')
+  AND name LIKE '%header_sub%'
+ORDER BY type_desc, name;
+
+-- ストアドの中で INSERT されている先を直接見る（定義を読むのが確実）
+SELECT m.definition
+FROM sys.sql_modules AS m
+INNER JOIN sys.objects AS o ON m.object_id = o.object_id
+WHERE o.name = 'usp_shanghai_invoice_header_sub_temp_create';
+*/
+
+-- ==================================================================
+-- 補助3. 接続先に追従しないストアド・ビューを洗い出す
+--    POEM.dbo. のようにデータベース名を直接書いているものは、
+--    検証環境から実行しても本番を参照・更新してしまいます。
+--    特に UPDATE / DELETE / INSERT を含むものは要注意です。
+-- ==================================================================
+/*
+USE ATOM;
+
+SELECT
+    o.name                                      AS [オブジェクト名],
+    o.type_desc                                 AS [種別],
+    CASE
+        WHEN m.definition LIKE '%DELETE%' OR m.definition LIKE '%UPDATE%' OR m.definition LIKE '%INSERT%'
+        THEN '更新あり'
+        ELSE '参照のみ'
+    END                                         AS [更新の有無]
+FROM sys.sql_modules AS m
+INNER JOIN sys.objects AS o ON m.object_id = o.object_id
+WHERE m.definition LIKE '%POEM.dbo.%'
+   OR m.definition LIKE '%TJM_master.dbo.%'
+ORDER BY [更新の有無] DESC, o.type_desc, o.name;
+*/
+
+-- ==================================================================
+-- 補助4.【精度が低い。補助6 を使うこと】
+--    別データベースを「更新している」ものだけに絞る（文字列一致）
+--    補助3 は件数が多く（2026-10-23 時点で 91 件）、目視が大変です。
+--    別DB参照があり、かつ更新文を含むものだけに絞ります。
+--    ビューは更新文を持てないため、実質ストアドだけになります。
+--
+--    ※【2026-10-23 判明】このクエリは誤検出が多いです。
+--      update_ymd / delete_ymd という列名が 'UPDATE' / 'DELETE' に当たるため、
+--      ほぼすべてのオブジェクトで U と D が立ちます。
+--      （ビューに D が付くのがその証拠。ビューは DELETE できません）
+--      実際の判定には補助6 を使ってください。
+-- ==================================================================
+/*
+USE ATOM;
+
+SELECT
+    o.name                                  AS [オブジェクト名],
+    o.type_desc                             AS [種別],
+    CASE WHEN m.definition LIKE '%POEM.dbo.%'       THEN '●' ELSE '' END AS [POEM],
+    CASE WHEN m.definition LIKE '%TJM_master.dbo.%' THEN '●' ELSE '' END AS [TJM],
+    CASE WHEN m.definition LIKE '%INSERT%' THEN 'I' ELSE '' END
+  + CASE WHEN m.definition LIKE '%UPDATE%' THEN 'U' ELSE '' END
+  + CASE WHEN m.definition LIKE '%DELETE%' THEN 'D' ELSE '' END
+  + CASE WHEN m.definition LIKE '%MERGE%'  THEN 'M' ELSE '' END
+                                            AS [更新文の有無]
+FROM sys.sql_modules AS m
+INNER JOIN sys.objects AS o ON m.object_id = o.object_id
+WHERE (m.definition LIKE '%POEM.dbo.%' OR m.definition LIKE '%TJM_master.dbo.%')
+  AND (m.definition LIKE '%INSERT%'
+    OR m.definition LIKE '%UPDATE%'
+    OR m.definition LIKE '%DELETE%'
+    OR m.definition LIKE '%MERGE%')
+ORDER BY o.type_desc, o.name;
+*/
+
+-- ==================================================================
+-- 補助5. 使われていなさそうなオブジェクトを洗い出す
+--    del_ / del_new_ / new_ / _test / z_ などの名前が残っています。
+--    消すかどうかは DB 側の判断です（本ファイルは参照のみ）。
+-- ==================================================================
+/*
+USE ATOM;
+
+SELECT name, type_desc, create_date, modify_date
+FROM sys.objects
+WHERE type IN ('P', 'V', 'FN', 'IF', 'TF', 'U')
+  AND (name LIKE 'del[_]%' OR name LIKE 'new[_]%' OR name LIKE 'z[_]%' OR name LIKE '%[_]test')
+ORDER BY type_desc, name;
+*/
+
+-- ==================================================================
+-- 補助6. 別データベースを更新しているものを確実に洗い出す
+--    SQL Server のパーサが解析した依存関係を使います。
+--    is_updated が「本当に更新しているか」を表すため、
+--    UPDATE t SET … FROM POEM.dbo.xxx AS t のように
+--    別名を挟む書き方も正しく判定できます。
+--
+--    カーソルを使っているのは、解析できないオブジェクトで
+--    処理が止まらないようにするためです。参照のみで、何も変更しません。
+-- ==================================================================
+/*
+USE ATOM;
+
+SET NOCOUNT ON;
+
+DECLARE @results TABLE (
+    [オブジェクト名] sysname,
+    [種別]           nvarchar(60),
+    [参照先DB]       sysname,
+    [参照先]         nvarchar(300),
+    [更新するか]     bit
+);
+
+DECLARE @id int, @name sysname;
+
+DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
+    SELECT o.object_id, o.name
+    FROM sys.objects AS o
+    INNER JOIN sys.sql_modules AS m ON o.object_id = m.object_id
+    WHERE o.type IN ('P', 'V', 'FN', 'IF', 'TF', 'TR');
+
+OPEN cur;
+FETCH NEXT FROM cur INTO @id, @name;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        INSERT INTO @results
+        SELECT
+            @name,
+            (SELECT type_desc FROM sys.objects WHERE object_id = @id),
+            re.referenced_database_name,
+            ISNULL(re.referenced_schema_name, '') + '.' + re.referenced_entity_name,
+            re.is_updated
+        FROM sys.dm_sql_referenced_entities(
+                 OBJECT_SCHEMA_NAME(@id) + '.' + @name, 'OBJECT') AS re
+        WHERE re.referenced_database_name IS NOT NULL
+          AND re.referenced_database_name <> DB_NAME();
+    END TRY
+    BEGIN CATCH
+        -- 解析できないものは読み飛ばす
+    END CATCH
+
+    FETCH NEXT FROM cur INTO @id, @name;
+END
+
+CLOSE cur;
+DEALLOCATE cur;
+
+SELECT DISTINCT
+    [オブジェクト名], [種別], [参照先DB], [参照先],
+    CASE WHEN [更新するか] = 1 THEN '★更新する' ELSE '参照のみ' END AS [操作]
+FROM @results
+ORDER BY [更新するか] DESC, [参照先DB], [オブジェクト名];
 */

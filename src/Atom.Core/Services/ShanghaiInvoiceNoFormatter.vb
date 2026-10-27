@@ -62,6 +62,24 @@ Namespace Services
         End Function
 
         ''' <summary>
+        ''' INVOICE 番号から枝番の部分を切り出します。
+        ''' </summary>
+        ''' <param name="invoiceNo">INVOICE 番号。</param>
+        ''' <returns>枝番。切り出せないときは空文字。</returns>
+        ''' <remarks>
+        ''' 共通部分の判定は <see cref="GetInvoiceNoMain"/> と同じです。
+        ''' 印刷用 INVOICE_NO（同じコンテナの枝番をカンマで連結したもの）の組み立てに使います。
+        ''' </remarks>
+        Public Function GetBranchNo(invoiceNo As String) As String
+            Dim main As String = Me.GetInvoiceNoMain(invoiceNo)
+            ' 共通部分を切り出せなかったとき
+            If String.IsNullOrEmpty(invoiceNo) OrElse invoiceNo.Length <= main.Length Then
+                Return String.Empty
+            End If
+            Return invoiceNo.Substring(main.Length)
+        End Function
+
+        ''' <summary>
         ''' 画面に表示する REF_NO を作ります。
         ''' </summary>
         ''' <param name="invoiceNos">一時データに含まれる INVOICE 番号の一覧。昇順であること。</param>

@@ -136,24 +136,61 @@ INVOICE/PACKING 取込（menuNo=101）で本登録した INVOICE に対し、**�
 | 3 | 船名/AIR便名 | `vessel` | 文字列 | 可 | 船名または航空便名 |
 | 4 | 出荷方法 | `syukka_hoho` | 数値 | 可 | SEA / AIR 等の区分 |
 | 5 | 乙仲 | `otsunaka_no` | 数値 | 可 | 通関業者 |
-| 6 | カートン数 | `carton_qty` | 数値 | **不可** | 明細から集計 |
-| 7 | 数量 | `total_suryo` | 数値 | **不可** | 明細から集計 |
-| 8 | 金額 | `total_amount` | 数値 | **不可** | 明細から集計 |
+| 6 | カートン数 | （集計値） | 数値 | **不可** | 明細から集計。`usp_shanghai_invoice_gokei_get` の `@total_carton` |
+| 7 | 数量 | （集計値） | 数値 | **不可** | 同上。`@total_suryo` |
+| 8 | 金額 | （集計値） | 数値 | **不可** | 同上。`@total_amount` |
 | 9 | 返却パレット | `return_pallet` | 数値 | 可 | 返却するパレット数 |
-| 10 | REF_NO | `ref_no` | 文字列 | — | **画面上の扱いは §18 C-1 で要確認** |
+| 10 | REF_NO | `ref_no` | 文字列 | — | 画面には出さない（C-1 で解決済み） |
 
 登録先は `tbl_t_shanghai_invoice_header`。
+
+> **訂正（2026-10-21）。**当初 7・8 を `total_suryo` / `total_amount` という列として記載していたが、
+> **実テーブルにそのような列は無い。**数量・金額は毎回 `usp_shanghai_invoice_gokei_get` で集計して表示する。
+> `carton_qty` 列は存在するが、旧 Access も表示には集計値を使っている。
+
+#### `tbl_t_shanghai_invoice_header` の実際の列
+
+| 列 | 型 | 備考 |
+|---|---|---|
+| `pk_key` | int | IDENTITY。主キーではない |
+| **`pk_invoice_no_main`** | nvarchar(20) | **主キー** |
+| `bl_date` | datetime | |
+| `syukka_hoho` | int | |
+| `carton_qty` | int | |
+| `vessel` | nvarchar(50) | |
+| `container_40` / `container_no_40` / `seal_no_40` | nvarchar | **40ft 用。画面には無い** |
+| `container_20` / `container_no_20` / `seal_no_20` | nvarchar | **20ft 用。画面には無い** |
+| `return_pallet` | int | |
+| `ref_no` | nvarchar(50) | |
+| `del_flg` | int | |
+| `otsunaka_no` | int | |
+| `shiiresaki_code` | nvarchar(10) | |
+| `update_ymd` / `update_login` | datetime / nvarchar(6) | 排他制御に使う |
+
+> `container_40` 〜 `seal_no_20` の 6 列は、**コンテナ情報を明細側（ヘッダサブ）へ移す前の名残**と見られる（推測）。
+> 現行画面では使っていない。**要確認（C-26）**。
 
 ### 4.2 INVOICE詳細（明細）
 
 登録先は `tbl_t_shanghai_invoice_header_sub`。
+**画面で編集している間は作業用の一時テーブル `tbl_t_shanghai_invoice_header_sub_temp` に保持する。**
+
+| | |
+|---|---|
+| 一時テーブル | `dbo.tbl_t_shanghai_invoice_header_sub_temp` |
+| 利用者の区別 | **`pk_login_code`**。必ずこの列で絞り込む |
+| 作成 | `usp_shanghai_invoice_header_sub_temp_create`（**利用者単位で全削除してから作り直す**） |
+| 本体への反映 | `usp_shanghai_invoice_header_sub_update`（**その INVOICE の行を全削除してから挿入**） |
+
+一時テーブルの列は本体と同じ構成に `pk_login_code` が付いたもの。
+`update_ymd` / `update_login` は持たない。
 
 | No. | 画面表示名 | 列名 | 入力 | 内容 |
 |---:|---|---|---|---|
 | 1 | INVOICE_NO | `pk_invoice_no` | 不可 | 枝番付きの INVOICE 番号 |
 | 2 | 配送予定日 | `haiso_yotei_ymd` | 可 | 配送する予定の日 |
 | 3 | 配送タイプ | `haiso_type` | 可 | 配送先・輸送手段の区分（項目マスタ `HKB`） |
-| 4 | コンテナ（AIR=AIR） | `container_type` | 可 | コンテナサイズ。航空便は `AIR` |
+| 4 | コンテナ（AIR=AIR） | `container_type` | 可 | コンテナサイズ。**`View__container_type` のプルダウン**（40Ft / 20Ft / AIR / LCL / 社内便） |
 | 5 | コンテナNO（AIR=商品群） | `container_no` | 可 | コンテナ番号。航空便は商品群 |
 | 6 | シールNO | `seal_no` | 可 | コンテナのシール番号 |
 | 7 | カートン数 | `carton_qty` | 可 | その枝番のカートン数 |
@@ -166,7 +203,7 @@ INVOICE/PACKING 取込（menuNo=101）で本登録した INVOICE に対し、**�
 | 項目 | 内容 |
 |---|---|
 | UI | プルダウン |
-| 取得元 | ビュー `View__invoice_no_main` |
+| 取得元 | ビュー `View__invoice_no_main`（列：`pk_invoice_no_main` / `bl_date`） |
 | 設定箇所 | 共通遷移処理（`指定フォームオープン.bas`）で `RowSource` を設定して `Requery` |
 
 旧 Access には貿易用の `View__invoice_no_main_boueki` へ切り替える分岐があるが、
@@ -193,9 +230,13 @@ INVOICE/PACKING 取込（menuNo=101）で本登録した INVOICE に対し、**�
 
 1. **入力欄の初期化** — 船名・乙仲・金額・数量・カートン数・出荷方法・B/L DATE・返却パレットを空にする
 2. **登録済みかの判定** — `usp_shanghai_invoice_sonzai_check` を実行
-   - 第2パラメータ：ヘッダの件数
-   - 第3パラメータ：サブヘッダの件数（0 なら「新規」とみなす）
-   - 第4パラメータ：BL DATE・出荷方法の種類数
+
+   | 引数 | 型 | 内容 |
+   |---|---|---|
+   | `@invoice_no` | nvarchar(20) | INVOICE 番号（メイン） |
+   | `@invoice_header_count` | int OUT | ヘッダの件数 |
+   | `@invoice_sub_count` | int OUT | ヘッダサブの件数（**0 なら PACKING から新規に作る**） |
+   | `@jyufuku_count` | int OUT | BL DATE・出荷方法の種類数 |
 3. **整合チェック** — 第4パラメータが 2 以上なら中断
    > 同じINVOICE_NOで、BL_DATE、出荷方法が異なるPACKINGがあります。
    > PACKINGデータを修正してください。
@@ -203,7 +244,27 @@ INVOICE/PACKING 取込（menuNo=101）で本登録した INVOICE に対し、**�
    - ヘッダ件数が 0 → **「新規登録です。」**を表示し、入力欄をすべて空にする
    - ヘッダ件数が 1 以上 → `tbl_t_shanghai_invoice_header` から読み込んで画面へ表示
 5. **サブヘッダの一時データ作成** — `usp_shanghai_invoice_header_sub_temp_create`
+
+   | 引数 | 型 | 内容 |
+   |---|---|---|
+   | `@login_code` | nvarchar(6) | 利用者 |
+   | `@shanghai_chotatsu` | int | 担当区分。**3 のとき** コンテナ番号・シール番号を `'BOUEKI'` で埋める |
+   | `@invoice_no` | nvarchar(20) | INVOICE 番号（メイン） |
+   | `@shinki_flg` | int | **0＝既存の `_sub` から複写 / 1＝PACKING から新規作成** |
+   | `@invoice_count` | int OUT | 作成件数 |
+
 6. **合計情報の取得** — `usp_shanghai_invoice_gokei_get`
+
+   | 引数 | 型 | 内容 |
+   |---|---|---|
+   | `@invoice_no` | nvarchar(20) | INVOICE 番号（メイン） |
+   | `@bl_date` | datetime OUT | 明細の BL DATE |
+   | `@syukka_hoho` | int OUT | 明細の出荷方法 |
+   | `@total_carton` | int OUT | カートン数の合計 |
+   | `@total_amount` | float OUT | 金額の合計 |
+   | `@total_suryo` | float OUT | 数量の合計 |
+   | `@container_text` | nvarchar(50) OUT | コンテナタイプの表示名 |
+   | `@header_count` | int OUT | ヘッダの件数 |
    - カートン数・金額・数量を画面へ設定
    - **ヘッダが未登録のときのみ**、BL DATE と出荷方法も明細の集計値で埋める
 7. **入力欄の色** — ヘッダが未登録のとき、BL DATE と出荷方法をグレーにする
@@ -300,7 +361,52 @@ InternetExplorer.Application で非表示に呼び出す
 
 DataSpider のトリガーを叩いていると読み取れる。**Web 版では IE を使えないため再設計が必要**（§18 C-5）。
 
+#### DataSpider 側の処理内容（2026-10-27 判明）
+
+| 項目 | 内容 |
+|---|---|
+| ツール | DS（ツールDS） |
+| プロジェクト | `TJM_海外自動発注` |
+| スクリプト | `発注後定期自動処理 / 確定在庫転送納期R3反映` |
+| トリガー | `http://（サーバー）:7700/dataspider/trigger/KJH_R3_ZM510` |
+
+**処理の流れ**
+
+```text
+① \（サーバー）\TEMPDATA\ExternalMRP\ZM510.txt があるか確認
+② ある   → フォルダの最終更新日時を取得してメールを送る（データは作らない）
+③ 無い   → 下の SQL を実行し、結果を ZM510.txt として出力する
+④ 出力されたら別処理「R3納期更新処理結果監視」が起動
+   ・1 件以上あれば終了
+   ・0 件なら担当者へエラーメールを送り、エラーファイルへ改名して元を削除
+```
+
+**実行している SQL**
+
+```sql
+SELECT B.syanai_sansyo_no_original,
+       MAX(FORMAT(A.haiso_yotei_ymd, 'yyyy/MM/dd')) AS haiso_yotei_ymd
+FROM tbl_t_shanghai_invoice_header_sub AS A
+INNER JOIN tbl_t_shanghai_invoice_meisai AS B
+    ON A.pk_invoice_no = B.pk_invoice_no
+WHERE A.pk_invoice_no_main = '${MainInvoiceNo}'
+GROUP BY B.syanai_sansyo_no_original
+```
+
+**社内参照番号ごとの配送予定日（最大値）を R3 へ渡している。**
+
+> **SVF と同じ「ファイルを置いて別処理が拾う」方式である。**
+> 将来 ATOM が直接 `ZM510.txt` を書く選択肢もあるが、その場合は
+> **②の「既にファイルがあるときは処理しない」という作りも引き継ぐ必要がある**
+> （前の分が未処理のまま上書きされるのを防いでいるため）。
+
 ### 8.6 後続処理
+
+> **【未実装】**ストアドの引数名・型が未確認のため保留（C-28）。
+> 旧 Access の呼び出し順は次のとおり。
+> - `usp_shanghai_invoice_shikyu_hosozai_nouki_update`（第1引数＝元INV_NO）
+> - `usp_poem_makishin_nyu_syukko_update`（第1引数＝ログインコード、第2引数＝元INV_NO）
+
 
 | 処理 | ストアド | 内容 |
 |---|---|---|
@@ -326,14 +432,36 @@ DataSpider のトリガーを叩いていると読み取れる。**Web 版では
 
 ### 9.2 処理
 
-1. `usp_shanghai_container_type_check` で、**同じサイズのコンテナが複数あるか**を判定
-2. 複数ある場合
+1. **画面の明細を作業用の一時データへ反映する**（判定も更新も一時データを見るため）
+2. `usp_shanghai_container_type_check` で、**同じサイズのコンテナが複数あるか**を判定
+3. 複数ある場合
    > 同じサイズのコンテナが複数ある場合、ここでの更新は出来ません。
-3. 複数でない場合
+4. 複数でない場合
    - `usp_shanghai_container_no_update` を実行
    - 「更新完了しました。」を表示
 
 **1 コンテナサイズ・1 コンテナNO のときだけ使える機能**である。
+
+#### ストアドの引数（2026-10-27 確認）
+
+```
+usp_shanghai_container_type_check(@login_code nvarchar(6), @container_count int OUTPUT)
+usp_shanghai_container_no_update (@login_code nvarchar(6), @syori_flg int)
+```
+
+| 項目 | 内容 |
+|---|---|
+| 判定の中身 | `tbl_t_shanghai_invoice_header_sub_temp` を `pk_invoice_no_main` ＋ `pk_invoice_no` でまとめ、**コンテナ番号が 2 件以上ある組**を数える |
+| 更新の中身 | `tbl_t_shanghai_invoice_meisai` の `container_no` と `seal_no` を、一時データの値で更新する |
+| `@syori_flg` | **103 は `0`**（ヘッダサブの入力情報から更新）。`1` は menuNo 102 向け |
+
+#### 注意（2026-10-27 判明）
+
+| # | 内容 |
+|---:|---|
+| 1 | **`@container_count` は NULL で返ることがある。**`GROUP BY` ＋ `HAVING > 1` のため、該当が無いと行が返らず OUTPUT は NULL のままになる。**NULL は「該当なし」として扱う**（旧 Access も `IsNull` で判定していた） |
+| 2 | **`@syori_flg = 1` の分岐にテーブル名の誤りがある。**`INNER JOIN tbl_t_shanghai_invoice_container_no_temp` で結合しておきながら、`ON` 句と `SET` 句では `tbl_t_shanghai_container_no_temp`（`invoice_` が無い）を参照している。別名が解決されず**暗黙の直積になる恐れ**がある。**103 では `0` しか使わないため影響しないが、102 を作るときは要注意**（C-33） |
+| 3 | ストアド名は `container_type_check` だが、**実際に数えているのは `container_no`**。設計書の文言（「同じサイズのコンテナが複数ある場合」）は旧 Access のメッセージをそのまま踏襲している |
 
 ---
 
@@ -625,13 +753,19 @@ SVF では 1 つの様式にまとめられる見込み。
 | **C-2** | **配送予定日が未入力のとき、帳票に実行日が印字される。**現行どおりでよいか、未入力をエラーにするか | 取引先へ渡す書類の内容に関わる |
 | **C-3** | **配送手配書「定期便2」「定期便3」の実物。**4 様式を 1 つにまとめられる可能性がある | まとまれば作成量が 6 → 3 様式に減る |
 | ~~C-4~~ | **解決（2026-10-19）。**配送タイプ 45 件の一覧と様式の対応を §10.7 に記載 | — |
-| **C-5** | **DataSpider への HTTP 呼び出し（§8.5）の扱い。**Web 版では IE を使えない。サーバー側から呼ぶか、廃止するか | 外部システム連携の可否 |
+| ~~C-5~~ | **方針決定（2026-10-27）。ひとまず呼ばない。**DS 側の処理内容は §8.5 に記録した。配送予定日が入っているときは画面に「連携は未実装」と出す | 必要になったら、DS を呼ぶか ATOM が直接 `ZM510.txt` を書くかを決める |
 | ~~C-6~~ | **解決（2026-10-19）。**配送先は配送タイプに紐づく固定値（`View__haiso_type` 由来）。§10.7 に記載 | — |
 | ~~C-7~~ | **解決（2026-10-19）。**出荷方法＝`View__syukka_hoho`、乙仲＝`View__otsunaka`、船名＝`tbl_m_koumoku` の `SHP` | — |
 | ~~C-8~~ | **解決（2026-10-19）。明細は追加・削除しない。**明細行は `usp_shanghai_invoice_header_sub_temp_create` が INVOICE の枝番から自動生成する。VBA 全体に `INSERT` / `DELETE` が無く、サブフォームのモジュールも空。**画面では値の編集だけ**を行う | — |
 | ~~C-9~~ | **解決（2026-10-19）。**連携方式はファイル投入方式で確定。ASP.NET が連携テキストを生成し、SVF の監視フォルダへ置く。詳細は §19 | — |
 | ~~C-13~~ | **解決（2026-10-19）。**ASP.NET が連携テキストを生成して渡す（§19.3）。クエリー様式は使わない | — |
 | **C-14** | **修正モジュール Ver. 9.2.0.38 の適用状況。**マルチスレッド不具合の対策 | 本方式では影響は限定的だが、適用有無は把握しておきたい |
+| ~~C-25~~ | **解決（2026-10-21）。**明細の「コンテナ」は **`View__container_type` のプルダウン**にする（40Ft / 20Ft / AIR / LCL / 社内便） | — |
+| **C-26** | **`tbl_t_shanghai_invoice_header` の `container_40` 〜 `seal_no_20` の 6 列が未使用。**コンテナ情報を明細へ移す前の名残と思われる | 登録処理を作るときに触るかどうかの判断が要る |
+| **C-27** | **印刷用 INVOICE_NO の更新条件。**旧 Access は**コンテナNO だけ**で `UPDATE` しており、同じコンテナNO を持つ別の INVOICE まで書き換わる可能性がある。Web 版は INVOICE 番号（メイン）でも絞り込んだ | 旧の挙動に合わせるべきかどうか |
+| ~~C-29~~ | **方針決定（2026-10-21）。**検証用のストアドを新規に作り `POEM_dev` を向ける。既存は触らない。アプリは `Poem.MakishinProcedureName` で切り替える | **ストアドの作成は人の作業。**作成後に `Web.config` を設定する |
+| ~~C-28~~ | **解決（2026-10-27）。**引数を確認し、明細更新を実装した（§9.2） | — |
+| **C-33** | **`usp_shanghai_container_no_update` の `@syori_flg = 1` の分岐に、結合先と参照先のテーブル名の食い違いがある。**暗黙の直積になる恐れ。**menuNo 102 を作るときに影響する** | 103 では `0` しか使わないため当面は影響しない。DB 側の判断が要る |
 | ~~C-23~~ | **解決（2026-10-19）。**出力ボタンと「表示」ボタンを分け、待たせない作りにする（§19.12） | — |
 | ~~C-24~~ | **解決（2026-10-19）。**様式ごとに PDF 名が別になるため、**その処理で扱う帳票区分の分だけ**を削除・表示する（§19.12 ⑤） | — |
 | ~~C-15~~ | **解決（2026-10-19）。**SVF は別サーバーで他システムの帳票を出しており、稼働実績がある | — |
@@ -1180,3 +1314,228 @@ D:\SVFDATA\data_atom\
 
 > `.adp` のフォーム定義（`AllowAdditions` / `AllowDeletions`）までは取り出せていない。
 > 実画面に空の追加行が出ているようであれば、本項を見直す。
+
+### 2026-10-21（新サーバーからの SVF 疎通）
+
+新サーバー（Windows Server 2025 / クラウド）から SVF サーバーへの疎通を確認した。
+
+| | 結果 |
+|---|---|
+| 経路（TCP 445） | **到達する** |
+| 監視フォルダへの書き込み | **できる。ただし資格情報が必要** |
+
+開発者の PC からはそのまま通るが、**新サーバーからは認証を求められる。**
+クラウドと社内で認証の土台が違うため。
+
+**対応：アプリケーションプールの ID を、SVF 共有に権限のあるアカウントにする**
+（`docs/05_IIS_配置手順.md` §8-1）。
+
+また、**SVF サーバーには名前が付いておらず IP で参照する運用**のため、
+`Svf.WatchFolderPath` は IP で記述する。
+
+### 2026-10-21（DB 定義の確認と表示処理の実装）
+
+実 DB からストアド・ビュー・テーブルの定義を取得し、設計書へ反映した。
+
+**判明した主なこと**
+
+- 明細の作業用テーブルは **`tbl_t_shanghai_invoice_header_sub_temp`**（§4.2）
+- 各ストアドの引数名・型・入出力（§6.2）
+- 選択肢のビューはいずれも `tbl_m_koumoku` 由来
+  （`View__syukka_hoho`＝`SYK` / `View__otsunaka`＝`ATN` / `View__haiso_type`＝`HKB`）
+- 船名は項目マスタの **`SHP`**
+
+**訂正**
+
+- §4.1 の `total_suryo` / `total_amount` は**テーブルの列ではない**。集計値である
+
+**実装したもの（表示まで）**
+
+| | |
+|---|---|
+| `Atom.Core/Entities/ShanghaiInvoiceHeader.vb` | ヘッダ・明細・判定結果・選択肢のエンティティ |
+| `Atom.Data/Sql/ShanghaiInvoiceHeaderSql.vb` | 選択肢・ヘッダ・一時データの SQL |
+| `Atom.Data/Repositories/ShanghaiInvoiceHeaderRepository.vb` | データアクセス |
+| `Atom.Data/Services/ShanghaiInvoiceHeaderService.vb` | §6.2 の手順を 1 トランザクションで実行 |
+| `Atom.Web/Pages/Entry/InvoiceHeader.aspx(.vb)` | 画面への反映 |
+
+**登録・明細更新・帳票出力は未実装。**C-25 / C-26 を追加。
+
+### 2026-10-21（画面の調整）
+
+実機で確認した指摘を反映。
+
+| 指摘 | 対応 |
+|---|---|
+| B/L DATE の幅が狭く年しか見えない | 日付用の幅 `atom-cell-date`（150px）を `site.css` に追加し、B/L DATE と配送予定日へ適用 |
+| コンテナはプルダウンであるべき | `View__container_type` から選択肢を取得してプルダウンにした（**C-25 を解決**） |
+
+> `View__container_type` の並び順の列は未確認のため、`container_type` の順で並べている。
+> 旧画面の並び（40Ft / 20Ft / AIR / LCL / 社内便）と違うときは並び順を見直す。
+
+## 20. 表示処理で使わなかったもの
+
+無駄を増やさないため、**旧 Access にあったが今回の表示では呼んでいないもの**を記録する。
+
+### 20.1 他の処理で使うため、表示では呼ばないもの
+
+| 対象 | いつ使うか |
+|---|---|
+| `usp_shanghai_invoice_container_count` | **明細更新**（§9）。コンテナNOの件数を数える |
+| `usp_shanghai_ref_no_get` / `usp_shanghai_ref_no_update` | **登録**（§8）。REF_NO の採番 |
+| `usp_shanghai_invoice_header_sub_update` | **登録**（§8）。一時データを本体へ反映 |
+
+### 20.2 今回は使わないと判断したもの
+
+| 対象 | 理由 |
+|---|---|
+| `usp_shanghai_invoice_header_get` | menuNo 106 / 403 向け。103 では `tbl_t_shanghai_invoice_header` を直接読む |
+| `usp_koumoku_contents_get` / `usp_koumoku_master_pickup` | 選択肢は `View__syukka_hoho` などのビューから直接読む。旧 Access も同じ（`RowSource` にビューを指定） |
+| `View__invoice_no_main_boueki` | **旧 Access でもコメントアウト済み**。貿易用の切り替えは無効（§5） |
+| 共通関数 `invoice_header_display` | 複数画面で共有していた関数。Web 版は画面ごとに書く方針 |
+| `@container_text`（`usp_shanghai_invoice_gokei_get` の OUTPUT） | 画面に出す場所が無い。**ただし受け取りは必須**（既定値の無い OUTPUT 引数のため、省略すると呼び出しが失敗する） |
+
+### 20.3 今回の実装で削ったもの
+
+| 対象 | 理由 |
+|---|---|
+| 元INV_NO の選択肢で `bl_date` を取得していた処理 | **並び順にしか使っていなかった。**`ORDER BY` だけ残し、取得をやめた。選択肢は文字列の一覧になった |
+
+### 20.4 使う予定だが現時点では未使用のもの
+
+| 対象 | いつ使うか |
+|---|---|
+| `ShanghaiInvoiceHeaderRepository.UpdateDetailTemp` | 明細の編集を一時データへ反映するとき |
+| `ShanghaiInvoiceHeader` の `CartonQty` / `RefNo` / `ShiiresakiCode` | 登録のとき |
+
+**上記以外に死蔵しているものは無い。**
+
+### 2026-10-21（登録処理の実装）
+
+設計書 §8 のうち、**§8.1 〜 §8.4 と §8.7 を実装した。**
+
+| 節 | 内容 | 状況 |
+|---|---|---|
+| 8.1 | 入力チェック（元INV_NO・船名・乙仲） | **済** |
+| 8.2 | ヘッダの INSERT / UPDATE 分岐 | **済** |
+| 8.3 | 一時データを本体の明細へ反映 | **済** |
+| 8.4 | 印刷用 INVOICE_NO の編集 | **済** |
+| 8.5 | 外部システムへの通知 | **未実装（C-5）。**配送予定日があるときは画面に「連携は未実装」と出す |
+| 8.6 | 後続処理（支給包装材・POEM 巻芯） | **未実装（C-28）。**ストアドの引数が未確認 |
+| 8.7 | 完了表示と再表示 | **済** |
+
+**画面の明細は、登録ボタンを押した時点でまとめて一時データへ反映する。**
+108 のようにセルごとにポストバックさせていないのは、103 は明細が少なく、
+登録のタイミングで一括して反映すれば足りるためである。
+
+§8.2 〜 §8.4 は**ひとつのトランザクション**で扱う。
+途中で失敗したときに、ヘッダだけ更新されて明細が古いまま残るのを防ぐため。
+
+**C-27 / C-28 を追加。**
+
+### 2026-10-21（後続処理の実装）
+
+後続処理 2 本の引数が判明したため実装した。**§8 は 8.5 を除いてすべて実装済み。**
+
+| 節 | 状況 |
+|---|---|
+| 8.1 〜 8.4 | 済 |
+| **8.6** | **済**（本日追加） |
+| 8.7 | 済 |
+| 8.5 外部システムへの通知 | **未実装（C-5）** |
+
+登録は次の順でひとつのトランザクションにまとめている。
+
+```text
+① 画面の明細 → 作業用の一時データ
+② ヘッダを INSERT / UPDATE
+③ 一時データ → 本体の明細
+④ 印刷用 INVOICE_NO の編集
+⑤ 支給包装材の納期更新
+⑥ POEM の巻芯入出庫更新
+```
+
+**⑤は③の結果（ヘッダサブの配送予定日）を見るため、順序を入れ替えてはいけない。**
+
+C-28 は明細更新（§9）の 2 本だけになった。
+
+### 2026-10-21（POEM 更新の危険に対する暫定対策）
+
+**`ATOM_dev` の `usp_poem_makishin_nyu_syukko_update` が、本番の POEM を書き換えることが判明した。**
+ストアド内で `POEM.dbo.…` とデータベース名を直接指定しているため、接続先に追従しない。
+
+アプリ側の暫定対策として `Web.config` に **`Poem.UpdateEnabled`** を追加した。
+
+| | |
+|---|---|
+| 既定 | **`false`**（更新しない） |
+| 更新しなかったとき | ログに警告を残し、画面に「POEM の巻芯入出庫は更新していません。」と出す |
+| 設定が無い・読めないとき | **安全側に倒して更新しない** |
+
+**これは暫定対策である。**恒久対応は DB 側の課題として C-29 に挙げた。
+
+### 2026-10-21（POEM 更新の恒久対応の方針）
+
+**検証用のストアドを新しく作り、`POEM_dev` を向ける**方針に決定。
+`ATOM_dev` は旧環境の検証でまだ使うため、**既存のストアドは上書きしない。**
+
+アプリ側は `Web.config` の **`Poem.MakishinProcedureName`** で呼ぶストアド名を切り替える。
+
+| 設定 | 内容 |
+|---|---|
+| `Poem.UpdateEnabled` | 更新そのものを行うか。**既定 `false`** |
+| `Poem.MakishinProcedureName` | 呼ぶストアド名。**英数字とアンダースコアのみ**を認める |
+
+**両方が揃ったときだけ**更新する。どちらか欠けていれば更新せず、画面とログに残す。
+
+> 設定値をコマンド文へ組み込むため、ストアド名は `^[A-Za-z0-9_]+$` で検査している。
+> 値が不正なときは更新を行わず、警告をログに残す。
+
+**C-29 を解決。**
+
+**2026-10-21 時点で検証用ストアド `usp_poem_makishin_nyu_syukko_update_dev` は作成済み。**
+`Web.config` も検証向けに設定した（`Poem.UpdateEnabled = true`）。
+
+> **本番へ配置するときは `Poem.MakishinProcedureName` を本番用の名前へ戻すこと。**
+> 検証用の名前のままだと、本番にそのストアドが無く登録が失敗する。
+
+### 2026-10-27（DataSpider 連携の調査と方針）
+
+`KJH_R3_ZM510` の中身が判明した（§8.5 に記録）。
+
+**ひとまず呼ばない方針**とする。登録時に配送予定日が入っていれば、
+画面に「外部システムへの連携は未実装です」と出して利用者に伝える（実装済み）。
+
+**C-5 を解決。**
+
+> 必要になったときの選択肢は 2 つ。
+> | 案 | 内容 |
+> |---|---|
+> | A | ATOM から HTTP でトリガーを叩く（旧 Access と同じ経路） |
+> | B | **ATOM が直接 `ZM510.txt` を書く**（SVF と同じ考え方。DS を介さない） |
+>
+> B を採るなら、**既にファイルがあるときは書かない**という判定も必要になる。
+
+### 2026-10-27（明細更新の実装）
+
+`usp_shanghai_container_type_check` / `usp_shanghai_container_no_update` の引数が判明したため、
+**§9 の明細更新を実装した。**
+
+| 手順 | 実装 |
+|---|---|
+| 画面の明細 → 一時データ | 済 |
+| 重複の判定（NULL は「該当なし」） | 済 |
+| コンテナ番号・シール番号の一括更新 | 済 |
+| 更新後の再表示 | 済 |
+
+**C-28 を解決。C-33（102 向け分岐のテーブル名の誤り）を追加。**
+
+#### 103 の実装状況
+
+| 機能 | 状況 |
+|---|---|
+| 表示（§6） | **済** |
+| 登録（§8） | **済**（§8.5 は「呼ばない」方針） |
+| 明細更新（§9） | **済** |
+| 配送手配書（§10） | 未（様式の作成待ち） |
+| 入荷明細書（§11） | 未（様式の作成待ち） |

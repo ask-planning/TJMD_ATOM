@@ -56,11 +56,14 @@
     <Compile Include="Repositories\ImportProgressRepository.vb" />
     <Compile Include="Repositories\LoginRepository.vb" />
     <Compile Include="Repositories\ShanghaiImportRepository.vb" />
+    <Compile Include="Repositories\ShanghaiInvoiceHeaderRepository.vb" />
     <Compile Include="Services\ShanghaiImportService.vb" />
+    <Compile Include="Services\ShanghaiInvoiceHeaderService.vb" />
     <Compile Include="Sql\ExpenseCodeSql.vb" />
     <Compile Include="Sql\ImportProgressSql.vb" />
     <Compile Include="Sql\LoginSql.vb" />
     <Compile Include="Sql\ShanghaiImportSql.vb" />
+    <Compile Include="Sql\ShanghaiInvoiceHeaderSql.vb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Atom.Core\Atom.Core.vbproj">

@@ -466,6 +466,11 @@ body {
     width: 60px;
 }
 
+/* 日付入力。ブラウザの日付ピッカーが収まる幅にします。 */
+.atom-cell-date {
+    width: 150px;
+}
+
 .atom-cell-wide {
     width: 220px;
 }

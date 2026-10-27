@@ -73,6 +73,7 @@
     <Compile Include="Entities\Koumoku.vb" />
     <Compile Include="Entities\LoginUser.vb" />
     <Compile Include="Entities\ShanghaiImportField.vb" />
+    <Compile Include="Entities\ShanghaiInvoiceHeader.vb" />
     <Compile Include="Entities\ShanghaiImportRow.vb" />
     <Compile Include="Entities\Tsuka.vb" />
     <Compile Include="Exceptions\ImportFormatException.vb" />

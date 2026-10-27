@@ -113,7 +113,7 @@
                     <asp:Label ID="lblBlDate" runat="server" CssClass="atom-form-label"
                         Text="B/L DATE" AssociatedControlID="txtBlDate" />
                     <div class="atom-form-field">
-                        <asp:TextBox ID="txtBlDate" runat="server" CssClass="atom-cell atom-cell-short"
+                        <asp:TextBox ID="txtBlDate" runat="server" CssClass="atom-cell atom-cell-date"
                             TextMode="Date" />
                     </div>
                 </div>
@@ -228,7 +228,7 @@
                 <asp:TemplateField HeaderText="配送予定日">
                     <ItemTemplate>
                         <asp:TextBox ID="txtHaisoYoteiYmd" runat="server"
-                            CssClass="atom-cell atom-cell-short" TextMode="Date" />
+                            CssClass="atom-cell atom-cell-date" TextMode="Date" />
                     </ItemTemplate>
                 </asp:TemplateField>
                 <asp:TemplateField HeaderText="配送タイプ">
@@ -238,8 +238,7 @@
                 </asp:TemplateField>
                 <asp:TemplateField HeaderText="コンテナ（AIR=AIR）">
                     <ItemTemplate>
-                        <asp:TextBox ID="txtContainerType" runat="server"
-                            CssClass="atom-cell atom-cell-short" MaxLength="10" />
+                        <asp:DropDownList ID="ddlContainerType" runat="server" CssClass="atom-select" />
                     </ItemTemplate>
                 </asp:TemplateField>
                 <asp:TemplateField HeaderText="コンテナNO（AIR=商品群）">

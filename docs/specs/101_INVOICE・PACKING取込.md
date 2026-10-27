@@ -1411,3 +1411,153 @@ WHERE pk_login_code = @login_code
 
 この解析により、108 画面の編集で壊れうる箇所が 2 つ判明した。詳細は
 `docs/specs/108_取込結果確認.md` の 2026-09-25 の節に記載。
+
+---
+
+## 別データベースへの影響（2026-10-23 調査）
+
+検証環境（`ATOM_dev`）で 101 を動かしたときに、**本番のデータベースへ影響が出ないか**を調べた。
+
+### 調査方法
+
+`Atom.Data` の実装から、101 が呼ぶストアドと直接実行する SQL をすべて洗い出し、
+10/21 に取得したストアド定義と突き合わせた。
+
+### 結論
+
+**本番のデータベースを更新する箇所は無い。**別データベースは**参照のみ**。
+
+ただし **`POEM` と `TJM_master` は本番を読む。**ストアドが
+`POEM.dbo.…` `TJM_master.dbo.…` とデータベース名を直接指定しており、接続先に追従しないため。
+
+### 101 が呼ぶストアド（13 本）
+
+| ストアド | 更新先 | 別DB参照 |
+|---|---|---|
+| `usp_shanghai_import_count_get_next_month` | なし | — |
+| `usp_shanghai_import_tourokuzumi_count` | なし | — |
+| `usp_shanghai_import_check_err_clear` | 一時テーブル | **POEM**（参照） |
+| `usp_shanghai_import_jyufuku_check` | 一時テーブル | — |
+| `usp_shanghai_import_err_check_invoice` | 一時テーブル | **POEM / TJM_master**（参照） |
+| `usp_shanghai_import_err_check_packing` | 一時テーブル | **TJM_master**（参照） |
+| `usp_shanghai_import_check_amount` | 一時テーブル | — |
+| **`usp_shanghai_import_invoice_update`** | **ATOM の明細・ヘッダサブ**（本登録） | — |
+| `usp_shanghai_invoice_gokei_get` | なし | — |
+| `usp_POEM_tokuisaki_master_get` | なし | **POEM**（参照） |
+| `usp_shanghai_invoice_header_get` | なし | — |
+| `usp_shanghai_invoice_header_pickup` | なし | — |
+| `usp_shinchoku_jyokyo_sonzai_check` | なし | — |
+
+**定義が未確認のものは無い。**
+
+### 参照している本番のマスタ
+
+| 参照先 | 使う場面 |
+|---|---|
+| `POEM.dbo.View__makishin_code` | 巻芯コードの判定・単価チェック |
+| `POEM.dbo.tbl_m_tokuisaki` | 得意先マスタの取得 |
+| `TJM_master.dbo.tbl_m_hinmokumaster` | 品目マスタの登録有無チェック |
+
+### 直接実行している SQL
+
+いずれも **`ATOM` 内のテーブルのみ**。
+
+| 対象 | 操作 |
+|---|---|
+| `tbl_t_shanghai_invoice_import_check_temp` / `..._packing_...` | DELETE / INSERT / UPDATE |
+| `tbl_t_shanghai_invoice_header` / `_sub` | DELETE（置換時） / INSERT |
+| `tbl_t_shanghai_invoice_meisai` / `tbl_t_shanghai_packing_meisai` | DELETE（置換時） |
+| `tbl_t_import_progress` | INSERT / UPDATE |
+| `tbl_m_koumoku` | SELECT |
+
+### 注意点
+
+| # | 内容 |
+|---:|---|
+| 1 | **検証の判定結果が本番マスタに依存する。**品目マスタに無ければ警告、巻芯の単価が違えば警告、といった判定は**本番のマスタを見て**行われる |
+| 2 | **接続アカウントが本番の `POEM` / `TJM_master` を読める必要がある。**読めるということは、権限次第で**書ける**可能性もある。最小権限になっているかは別途確認したい（C-30） |
+| 3 | **ビューの定義が未確認。**ストアドの中で使っているビューが、さらに別データベースを参照していないかは見ていない（C-31） |
+
+### 未確認のビュー
+
+`tools/Export-DbSchema.sql` に追加済み。
+
+```text
+View_shanghai_special_hinmoku
+View_shanghai_import_suryo_check_invoice
+View_shanghai_import_suryo_check_packing
+View_shanghai_import_invoice_check_tajima_po
+View_shanghai_import_packing_check_tajima_po
+View_shanghai_import_packing_check_invoice_no
+View_shanghai_packing_carton_no
+View_shanghai_invoice_total_amount
+View_shanghai_invoice_container_no
+View_shanghai_invoice_bl_date_check
+View_shanghai_packing_total_suryo
+View__container_type
+```
+
+**「補助3」のクエリ**を流せば、`POEM.dbo.` / `TJM_master.dbo.` を含むオブジェクトを
+更新系かどうか分けて一覧できる。ビューも対象に含まれる。
+
+### 洗い出しの結果（2026-10-23 実施）
+
+`ATOM` 内で別データベースを参照しているオブジェクトは **91 件**。
+**そのうち別データベースを更新するのは 1 本だけ**だった。
+
+| オブジェクト | 内容 |
+|---|---|
+| **`usp_poem_makishin_nyu_syukko_update`** | **POEM を更新。**対処済み（103 の設計書 §8.6） |
+
+**101 が使う 3 本（`usp_shanghai_import_check_err_clear` /
+`usp_shanghai_import_err_check_invoice` / `usp_shanghai_import_err_check_packing`）は
+いずれも参照のみ**で、本節の結論どおりだった。
+
+> ログイン処理で使う `usp_syain_jyoho_get` も `TJM_master` を参照している。
+> **ログインの時点で本番マスタを読む。**
+
+#### 検出漏れの可能性
+
+このクエリは定義の文字列一致で判定している。次のような書き方は**取りこぼす**。
+
+```sql
+UPDATE t SET …
+FROM POEM.dbo.xxx AS t      -- 別名を挟むと 'UPDATE POEM.' に当たらない
+```
+
+**文字列一致での判定はあきらめ、`tools/Export-DbSchema.sql` の「補助6」を使う。**
+
+補助6 は SQL Server のパーサが解析した依存関係（`sys.dm_sql_referenced_entities`）の
+**`is_updated`** を見るため、別名を挟む書き方も正しく判定できる。
+
+> **補助4（文字列一致で更新文を探す版）は誤検出が多い。**
+> `update_ymd` / `delete_ymd` という**列名**が `UPDATE` / `DELETE` に当たるため、
+> ほぼすべてのオブジェクトで U と D が立つ。ビューに D が付くのがその証拠。
+
+#### 101 の 3 本について
+
+`usp_shanghai_import_check_err_clear` / `usp_shanghai_import_err_check_invoice` /
+`usp_shanghai_import_err_check_packing` は**定義を全文確認済み**。
+
+```sql
+LEFT JOIN TJM_master.dbo.tbl_m_hinmokumaster    -- 読むだけ
+LEFT JOIN POEM.dbo.View__makishin_code           -- 読むだけ
+UPDATE tbl_t_shanghai_invoice_import_check_temp  -- 更新は ATOM の一時テーブル
+```
+
+**更新先は `ATOM` の中だけ**である。
+
+#### 副産物：本番 DB に残っている不要そうなオブジェクト
+
+| 種類 | 件数 | 例 |
+|---|---:|---|
+| `del_` 接頭辞 | 4 | `del_usp_shanghai_import_err_check_invoice` |
+| `del_new_` 接頭辞 | 3 | `del_new_usp_shanghai_import_check_err_clear` |
+| `_test` 接尾辞 | 4 | `usp_shikyu_hosozai_bunkai_meisai_create_test` |
+| `new_` 接頭辞 | 1 | `new_View_Rpt_chotatsu_nyuka_meisai_header` |
+| その他 | 1 | `z_3_data_convert_hosozai` |
+
+`del_` と `del_new_` が併存しているため、**「消す前に名前を変えて退避」を 2 回行って
+そのままになっている**と見られる（推測）。
+
+**動作には影響しないが、調査のたびに引っかかる。**DB 側の整理対象として記録する（C-32）。
