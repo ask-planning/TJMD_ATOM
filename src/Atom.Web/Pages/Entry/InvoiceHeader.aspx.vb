@@ -6,8 +6,13 @@ Imports System.Collections.Generic
 Imports System.Globalization
 Imports System.Web.UI
 Imports System.Web.UI.WebControls
+Imports System.Configuration
+Imports System.IO
+Imports System.Web
 Imports Atom.Core.Entities
+Imports Atom.Core.Logging
 Imports Atom.Data.Services
+Imports Atom.Report
 Imports Atom.Web.Common
 
 Namespace Pages.Entry
@@ -87,11 +92,47 @@ Namespace Pages.Entry
 
         ''' <summary>選択中の元INV_NO を保持する ViewState のキー。</summary>
         Private Const SelectedInvoiceNoKey As String = "SelectedInvoiceNoMain"
+
+        ''' <summary>SVF の監視フォルダのパスを保持する設定キー。</summary>
+        Private Const SvfWatchFolderKey As String = "Svf.WatchFolderPath"
+
+        ''' <summary>SVF の PDF 出力先フォルダのパスを保持する設定キー。</summary>
+        Private Const SvfPdfFolderKey As String = "Svf.PdfFolderPath"
+
+        ''' <summary>SVF の論理プリンタ名を保持する設定キー。</summary>
+        Private Const SvfOutputPrinterKey As String = "Svf.OutputPrinter"
+
+        ''' <summary>ログの発生元名。</summary>
+        Private Const LogSource As String = "InvoiceHeader"
+
+        ''' <summary>配送手配書の発行を受け付けたときの文言。</summary>
+        Private Const HaisoTehaiAcceptedMessage As String =
+            "配送手配書の出力を開始しました。しばらくしてから「表示」を押してください。"
+
+        ''' <summary>出力対象が無かったときの文言。</summary>
+        Private Const HaisoTehaiEmptyMessage As String = "出力できる明細がありません。"
+
+        ''' <summary>AIR の様式が未作成であることを伝える文言。</summary>
+        Private Const HaisoTehaiAirSkippedMessage As String =
+            "（AIR の明細は様式が未作成のため出力していません。）"
+
+        ''' <summary>SVF の設定が足りないときの文言。</summary>
+        Private Const SvfSettingMissingMessage As String =
+            "SVF の設定が不足しています。管理者へ連絡してください。"
 #End Region
 
 #Region "フィールド"
         ''' <summary>業務処理。</summary>
         Private ReadOnly _service As New ShanghaiInvoiceHeaderService()
+
+        ''' <summary>配送手配書の業務処理。</summary>
+        Private ReadOnly _haisoTehaiService As New ShanghaiHaisoTehaiService()
+
+        ''' <summary>配送手配書の連携ファイルの組み立て。</summary>
+        Private ReadOnly _haisoTehaiWriter As New HaisoTehaiReportWriter()
+
+        ''' <summary>SVF が出力した PDF の扱い。</summary>
+        Private ReadOnly _pdfStore As New SvfPdfStore()
 
         ''' <summary>明細の配送タイプの選択肢。</summary>
         ''' <remarks>
@@ -120,6 +161,7 @@ Namespace Pages.Entry
                 Me.ViewState(SelectedInvoiceNoKey) = value
             End Set
         End Property
+
 #End Region
 
 #Region "イベント"
@@ -250,6 +292,11 @@ Namespace Pages.Entry
         ''' <param name="sender">イベントの発生元。</param>
         ''' <param name="e">イベント引数。</param>
         Private Sub BtnRegister_Click(sender As Object, e As EventArgs) Handles btnRegister.Click
+            ' 権限が無いとき（基底クラスでも止めているが、更新処理の入口でも判定する）
+            If Me.IsAccessDenied Then
+                Return
+            End If
+
             Dim invoiceNoMain As String = Me.SelectedInvoiceNoMain
             Dim loginCode As String = SessionContext.Current.LoginCode
 
@@ -284,6 +331,11 @@ Namespace Pages.Entry
         ''' <param name="sender">イベントの発生元。</param>
         ''' <param name="e">イベント引数。</param>
         Private Sub BtnMeisaiUpdate_Click(sender As Object, e As EventArgs) Handles btnMeisaiUpdate.Click
+            ' 権限が無いとき（基底クラスでも止めているが、更新処理の入口でも判定する）
+            If Me.IsAccessDenied Then
+                Return
+            End If
+
             Dim invoiceNoMain As String = Me.SelectedInvoiceNoMain
             Dim loginCode As String = SessionContext.Current.LoginCode
 
@@ -305,17 +357,71 @@ Namespace Pages.Entry
         ''' </summary>
         ''' <param name="sender">イベントの発生元。</param>
         ''' <param name="e">イベント引数。</param>
+        ''' <remarks>
+        ''' 設計書 §10。出力の前に**これから出す帳票の PDF だけ**を削除し、
+        ''' 連携ファイルを SVF の監視フォルダへ置きます。
+        ''' PDF ができるまで待たず、利用者が「表示」を押した時点で確かめます。
+        '''
+        ''' **進捗状況の更新（§10.6）と入荷スケジュールの同時出力（§10.5）は未実装です。**
+        ''' </remarks>
         Private Sub BtnHaisoTehai_Click(sender As Object, e As EventArgs) Handles btnHaisoTehai.Click
-            Me.ShowMessage(NotImplementedMessage, False)
-        End Sub
+            ' 権限が無いとき（基底クラスでも止めているが、処理の入口でも判定する）
+            If Me.IsAccessDenied Then
+                Return
+            End If
 
-        ''' <summary>
-        ''' 配送手配書の「表示」を押したときの処理です。
-        ''' </summary>
-        ''' <param name="sender">イベントの発生元。</param>
-        ''' <param name="e">イベント引数。</param>
-        Private Sub BtnHaisoTehaiView_Click(sender As Object, e As EventArgs) Handles btnHaisoTehaiView.Click
-            Me.ShowMessage(NotImplementedMessage, False)
+            Dim settings As SvfReportSettings = CreateSvfSettings()
+            ' 設定が足りないとき
+            If Not IsSvfSettingReady(settings) Then
+                Me.ShowMessage(SvfSettingMissingMessage, True)
+                Return
+            End If
+
+            Dim invoiceNoMain As String = Me.SelectedInvoiceNoMain
+            Dim loginCode As String = SessionContext.Current.LoginCode
+            Dim now As Date = DateTime.Now
+
+            Dim result As ShanghaiHaisoTehaiResult =
+                Me._haisoTehaiService.CreateReport(loginCode, Me.CurrentShanghaiChotatsu(), invoiceNoMain, now.Date)
+
+            ' 入力に問題があったとき
+            If Not String.IsNullOrEmpty(result.ValidationMessage) Then
+                Me.ShowMessage(result.ValidationMessage, True)
+                Return
+            End If
+
+            ' 対象が 1 件も無いとき
+            If result.Rows.Count = 0 Then
+                Me.ShowMessage(HaisoTehaiEmptyMessage, True)
+                Return
+            End If
+
+            Try
+                ' 先にこれから出す帳票の PDF を消す（古い内容を今回のものと取り違えないため）
+                Me._pdfStore.Delete(settings.PdfFolderPath, CollectAllReportKubuns(), loginCode)
+
+                Dim written As HaisoTehaiWriteResult =
+                    Me._haisoTehaiWriter.Write(settings, result.Rows, loginCode, now)
+
+                Dim message As String = HaisoTehaiAcceptedMessage
+                ' AIR の明細があったとき
+                If written.SkippedAirCount > 0 Then
+                    message &= HaisoTehaiAirSkippedMessage
+                End If
+                ' 1 本も出せなかったとき
+                If Not written.HasOutput Then
+                    Me.ShowMessage(HaisoTehaiEmptyMessage & HaisoTehaiAirSkippedMessage, True)
+                    Return
+                End If
+
+                Me.ShowMessage(message, False)
+            Catch ex As UnauthorizedAccessException
+                Me.ShowMessage("SVF のフォルダへ書き込めません。管理者へ連絡してください。", True)
+                Logger.WriteError(LogSource, "SVF のフォルダへ書き込めません。", ex, loginCode)
+            Catch ex As IOException
+                Me.ShowMessage("SVF のフォルダを操作できません。管理者へ連絡してください。", True)
+                Logger.WriteError(LogSource, "SVF のフォルダを操作できません。", ex, loginCode)
+            End Try
         End Sub
 
         ''' <summary>
@@ -697,6 +803,60 @@ Namespace Pages.Entry
             Dim stored As Integer? = SessionContext.Current.ShanghaiChotatsu
             Return If(stored.HasValue, stored.Value, 0)
         End Function
+#End Region
+
+#Region "内部処理（配送手配書）"
+        ''' <summary>
+        ''' SVF の設定を読み取ります。
+        ''' </summary>
+        ''' <returns>読み取った設定。</returns>
+        ''' <remarks>パス・出力先はコードに直書きせず、Web.config から取得します。</remarks>
+        Private Shared Function CreateSvfSettings() As SvfReportSettings
+            Dim settings As New SvfReportSettings()
+            settings.WatchFolderPath = GetSetting(SvfWatchFolderKey)
+            settings.PdfFolderPath = GetSetting(SvfPdfFolderKey)
+            settings.OutputPrinter = GetSetting(SvfOutputPrinterKey)
+            Return settings
+        End Function
+
+        ''' <summary>
+        ''' SVF の設定が揃っているかを調べます。
+        ''' </summary>
+        ''' <param name="settings">読み取った設定。</param>
+        ''' <returns>揃っているとき True。</returns>
+        Private Shared Function IsSvfSettingReady(settings As SvfReportSettings) As Boolean
+            Return Not String.IsNullOrWhiteSpace(settings.WatchFolderPath) AndAlso
+                   Not String.IsNullOrWhiteSpace(settings.PdfFolderPath) AndAlso
+                   Not String.IsNullOrWhiteSpace(settings.OutputPrinter)
+        End Function
+
+        ''' <summary>
+        ''' 設定値を取得します。
+        ''' </summary>
+        ''' <param name="key">設定キー。</param>
+        ''' <returns>設定値。未設定のときは空文字。</returns>
+        Private Shared Function GetSetting(key As String) As String
+            Dim value As String = ConfigurationManager.AppSettings(key)
+            Return If(value, String.Empty)
+        End Function
+
+        ''' <summary>
+        ''' 配送手配書のすべての帳票区分を返します。
+        ''' </summary>
+        ''' <returns>帳票区分の一覧。</returns>
+        ''' <remarks>
+        ''' 出力の前に消すのは**配送手配書の PDF だけ**です。入荷明細書など、
+        ''' ほかの帳票の PDF には触れません。
+        ''' </remarks>
+        Private Shared Function CollectAllReportKubuns() As IList(Of String)
+            Dim kubuns As New List(Of String)()
+            For Each form As HaisoTehaiForm In HaisoTehaiForm.All()
+                kubuns.Add(form.ReportKubun)
+            Next
+            Return kubuns
+        End Function
+
+
 #End Region
 
 #Region "内部処理（書式）"

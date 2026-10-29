@@ -84,8 +84,7 @@ Public Class SvfDataFileWriter
 
         Try
             ' 監視対象外の名前で書き出す
-            Dim encoding As Encoding = Encoding.GetEncoding(CodePageShiftJis)
-            File.WriteAllText(writingPath, content, encoding)
+            File.WriteAllText(writingPath, content, CreateEncoding())
 
             ' 同名が残っているときは先に消す（File.Move は上書きできないため）
             If File.Exists(finalPath) Then
@@ -94,6 +93,11 @@ Public Class SvfDataFileWriter
 
             ' 書き終えてから監視対象の名前へ変更する
             File.Move(writingPath, finalPath)
+        Catch ex As EncoderFallbackException
+            Me.DeleteQuietly(writingPath, loginCode)
+            Logger.WriteError(LogSource,
+                "Shift_JIS に変換できない文字が含まれています。配置先 " & finalPath, ex, loginCode)
+            Throw
         Catch ex As Exception
             Me.DeleteQuietly(writingPath, loginCode)
             Logger.WriteError(LogSource, "連携ファイルの配置に失敗しました。配置先 " & finalPath, ex, loginCode)
@@ -126,6 +130,22 @@ Public Class SvfDataFileWriter
 #End Region
 
 #Region "内部処理"
+    ''' <summary>
+    ''' 連携ファイルの文字コードを作ります。
+    ''' </summary>
+    ''' <returns>Shift_JIS（CP932）の文字コード。</returns>
+    ''' <remarks>
+    ''' **変換できない文字があったら例外にします。**
+    ''' 既定のままだと、CP932 に無い文字（簡体字など）が黙って `?` に置き換わり、
+    ''' そのまま帳票に出てしまいます。上海から届くデータを扱うため、
+    ''' 気付かずに化けるより、その場で止めて直すほうが安全です。
+    ''' </remarks>
+    Private Shared Function CreateEncoding() As Encoding
+        Return Encoding.GetEncoding(CodePageShiftJis,
+                                    EncoderFallback.ExceptionFallback,
+                                    DecoderFallback.ExceptionFallback)
+    End Function
+
     ''' <summary>
     ''' 引数の内容を確かめます。
     ''' </summary>

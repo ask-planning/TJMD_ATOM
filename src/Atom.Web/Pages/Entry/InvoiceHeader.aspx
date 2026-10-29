@@ -179,11 +179,17 @@
                 <asp:Button ID="btnRegister" runat="server" Text="登 録"
                     CssClass="atom-action-button atom-action-primary"
                     UseSubmitBehavior="false" OnClientClick="AtomPage.beginProcessing(this);" />
+                <%-- 設計書 §10.2 の確認ダイアログ。「いいえ」のときは送信しません。 --%>
                 <asp:Button ID="btnHaisoTehai" runat="server" Text="配送手配書"
                     CssClass="atom-action-button"
-                    UseSubmitBehavior="false" OnClientClick="AtomPage.beginProcessing(this);" />
-                <asp:Button ID="btnHaisoTehaiView" runat="server" Text="表示"
-                    CssClass="atom-action-button" />
+                    UseSubmitBehavior="false"
+                    OnClientClick="if (!confirm('配送タイプ、コンテナ区分、コンテナNOの入力は済んでいますか。')) { return false; } AtomPage.beginProcessing(this);" />
+                <%-- ポップアップブロックを避けるため、ボタンではなくリンクで別タブに開きます。
+                     ボタンのポストバック後に window.open を呼ぶと、利用者の操作と見なされず塞がれます。
+                     PDF が出ているかの判定は遷移先（ReportView）で行います。 --%>
+                <asp:HyperLink ID="lnkHaisoTehaiView" runat="server" Text="表示"
+                    CssClass="atom-action-button" Target="_blank"
+                    NavigateUrl="~/Pages/Report/ReportView.aspx" />
             </div>
 
             <div class="atom-header-buttons">

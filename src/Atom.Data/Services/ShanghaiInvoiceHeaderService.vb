@@ -5,7 +5,6 @@ Option Infer Off
 Imports System.Collections.Generic
 Imports System.Configuration
 Imports System.Data.SqlClient
-Imports System.Text.RegularExpressions
 Imports System.Text
 Imports Atom.Core.Entities
 Imports Atom.Core.Logging
@@ -66,12 +65,18 @@ Namespace Services
         Private Const PoemProcedureNameKey As String = "Poem.MakishinProcedureName"
 
         ''' <summary>
-        ''' ストアド名として認めるかたち。英数字とアンダースコアのみ。
+        ''' 接続先のデータベースごとに、許可する巻芯更新ストアドを定めた表です。
         ''' </summary>
         ''' <remarks>
-        ''' 設定値をそのままコマンド文へ組み込むため、識別子として妥当かを必ず確かめます。
+        ''' ストアドは中で `POEM.dbo.…` とデータベース名を直接指定しており、接続先に追従しません。
+        ''' そのため **「どのデータベースに繋いでいるか」と「どのストアドを呼ぶか」の組み合わせ**
+        ''' で縛ります。設定を本番用の名前にしても、検証用のデータベースに繋いでいれば実行しません。
+        ''' 表に無いデータベースへ繋いでいるときも実行しません。
         ''' </remarks>
-        Private Const ProcedureNamePattern As String = "^[A-Za-z0-9_]+$"
+        Private Shared ReadOnly PoemProcedureByDatabase As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"ATOM", "usp_poem_makishin_nyu_syukko_update"},
+            {"ATOM_dev", "usp_poem_makishin_nyu_syukko_update_dev"}
+        }
 
         ''' <summary>POEM の更新を行わなかったときの文言。</summary>
         Public Const PoemSkippedMessage As String = "（POEM の巻芯入出庫は更新していません。）"
@@ -227,16 +232,16 @@ Namespace Services
                         ' 後続処理（§8.6）。明細を本体へ反映した後に実行する
                         Me._repository.UpdateShikyuHosozaiNouki(connection, transaction, header.InvoiceNoMain)
 
-                        Dim poemProcedureName As String = GetPoemProcedureName()
+                        Dim poemProcedureName As String = ResolvePoemProcedureName(connection, loginCode)
 
-                        ' POEM を更新する設定で、ストアド名も正しく設定されているとき
+                        ' POEM を更新する設定で、接続先に合ったストアドが決まったとき
                         If IsPoemUpdateEnabled() AndAlso poemProcedureName.Length > 0 Then
                             Me._repository.UpdatePoemMakishin(connection, transaction, loginCode,
                                                               header.InvoiceNoMain, poemProcedureName)
                         Else
                             result.IsPoemSkipped = True
                             Logger.WriteWarning(LogSource,
-                                "設定により POEM の更新を行いませんでした。INVOICE " & header.InvoiceNoMain, loginCode)
+                                "POEM の更新を行いませんでした。INVOICE " & header.InvoiceNoMain, loginCode)
                         End If
 
                         transaction.Commit()
@@ -348,30 +353,46 @@ Namespace Services
         End Function
 
         ''' <summary>
-        ''' 巻芯入出庫を更新するストアド名を取得します。
+        ''' 巻芯入出庫を更新するストアド名を決めます。
         ''' </summary>
-        ''' <returns>ストアド名。未設定または不正なかたちのときは空文字。</returns>
+        ''' <param name="connection">開いている接続。接続先のデータベース名を見ます。</param>
+        ''' <param name="loginCode">利用者のログインコード。ログに記録します。</param>
+        ''' <returns>実行してよいストアド名。実行すべきでないときは空文字。</returns>
         ''' <remarks>
-        ''' ストアドは中でデータベース名を直接指定しており、接続先に追従しません。
-        ''' 環境ごとに向き先の違うストアドを用意し、ここで切り替えます。
-        ''' 設定値をコマンド文へ組み込むため、**英数字とアンダースコアだけ**を認めます。
+        ''' 次の両方を満たしたときだけ名前を返します。
+        ''' 1. 接続先のデータベースが <see cref="PoemProcedureByDatabase"/> にある
+        ''' 2. 設定 `Poem.MakishinProcedureName` の値が、そのデータベースに対して許可された名前と一致する
+        '''
+        ''' **設定を本番用の名前にしても、検証用のデータベースに繋いでいれば実行しません。**
+        ''' 設定値をコマンド文へ組み込む前に表と照合するため、識別子の検査も兼ねています。
         ''' </remarks>
-        Private Shared Function GetPoemProcedureName() As String
-            Dim value As String = ConfigurationManager.AppSettings(PoemProcedureNameKey)
-            ' 設定が無いとき
-            If String.IsNullOrWhiteSpace(value) Then
-                Return String.Empty
-            End If
+        Private Shared Function ResolvePoemProcedureName(connection As SqlConnection, loginCode As String) As String
+            Dim databaseName As String = connection.Database
 
-            Dim trimmed As String = value.Trim()
-            ' 識別子として認められないかたちのとき
-            If Not Regex.IsMatch(trimmed, ProcedureNamePattern) Then
+            Dim allowedName As String = Nothing
+            ' 表に無いデータベースへ繋いでいるとき
+            If Not PoemProcedureByDatabase.TryGetValue(databaseName, allowedName) Then
                 Logger.WriteWarning(LogSource,
-                    "設定 " & PoemProcedureNameKey & " の値がストアド名として正しくありません。", String.Empty)
+                    "接続先のデータベース " & databaseName & " に対する巻芯更新ストアドが定められていません。", loginCode)
                 Return String.Empty
             End If
 
-            Return trimmed
+            Dim configured As String = ConfigurationManager.AppSettings(PoemProcedureNameKey)
+            ' 設定が無いとき
+            If String.IsNullOrWhiteSpace(configured) Then
+                Logger.WriteWarning(LogSource,
+                    "設定 " & PoemProcedureNameKey & " が未設定です。", loginCode)
+                Return String.Empty
+            End If
+
+            ' 設定値が、接続先に対して許可された名前と違うとき
+            If Not String.Equals(configured.Trim(), allowedName, StringComparison.OrdinalIgnoreCase) Then
+                Logger.WriteWarning(LogSource,
+                    "設定 " & PoemProcedureNameKey & " の値が接続先 " & databaseName & " に対して許可されていません。", loginCode)
+                Return String.Empty
+            End If
+
+            Return allowedName
         End Function
 
         ''' <summary>

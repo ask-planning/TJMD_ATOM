@@ -1,7 +1,0 @@
-<start>
-VrSetOutputPrinter="HONKAN_PRNT01"
-VrSetUseReportDirector=1
-VrSetDocName2="ATOM接続テスト"
-<end>
-REF_NO	MEMO
-TEST-0001	テスト出力

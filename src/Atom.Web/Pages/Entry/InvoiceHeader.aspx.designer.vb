@@ -94,9 +94,9 @@ Namespace Pages.Entry
         '''<remarks>自動生成されたフィールド。</remarks>
         Protected WithEvents btnHaisoTehai As Global.System.Web.UI.WebControls.Button
 
-        '''<summary>btnHaisoTehaiView コントロール。</summary>
-        '''<remarks>自動生成されたフィールド。</remarks>
-        Protected WithEvents btnHaisoTehaiView As Global.System.Web.UI.WebControls.Button
+        '''<summary>lnkHaisoTehaiView コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents lnkHaisoTehaiView As Global.System.Web.UI.WebControls.HyperLink
 
         '''<summary>btnNyukaMeisai コントロール。</summary>
         '''<remarks>自動生成されたフィールド。</remarks>

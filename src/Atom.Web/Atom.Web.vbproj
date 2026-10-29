@@ -113,19 +113,19 @@
     <Compile Include="Pages\Entry\InvoiceHeader.aspx.designer.vb">
       <DependentUpon>InvoiceHeader.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Pages\Report\ReportView.aspx.vb">
+      <DependentUpon>ReportView.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Pages\Report\ReportView.aspx.designer.vb">
+      <DependentUpon>ReportView.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Pages\Entry\InvoiceImport.aspx.vb">
       <DependentUpon>InvoiceImport.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
     <Compile Include="Pages\Entry\InvoiceImport.aspx.designer.vb">
       <DependentUpon>InvoiceImport.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Pages\Report\SvfConnectionTest.aspx.vb">
-      <DependentUpon>SvfConnectionTest.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Pages\Report\SvfConnectionTest.aspx.designer.vb">
-      <DependentUpon>SvfConnectionTest.aspx</DependentUpon>
     </Compile>
     <Compile Include="Pages\Common\Login.aspx.vb">
       <DependentUpon>Login.aspx</DependentUpon>
@@ -149,10 +149,10 @@
     <Content Include="Controls\HeaderControl.ascx" />
     <Content Include="Default.aspx" />
     <Content Include="Pages\Common\Login.aspx" />
-    <Content Include="Pages\Report\SvfConnectionTest.aspx" />
     <Content Include="Pages\Entry\ImportResult.aspx" />
     <Content Include="Pages\Entry\InvoiceHeader.aspx" />
     <Content Include="Pages\Entry\InvoiceImport.aspx" />
+    <Content Include="Pages\Report\ReportView.aspx" />
     <Content Include="Scripts\atom.js" />
     <Content Include="Site.Master" />
     <Content Include="Web.config" />

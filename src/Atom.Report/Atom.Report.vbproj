@@ -50,6 +50,9 @@
   <ItemGroup>
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="SvfDataFileWriter.vb" />
+    <Compile Include="HaisoTehaiForm.vb" />
+    <Compile Include="HaisoTehaiReportWriter.vb" />
+    <Compile Include="SvfPdfStore.vb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Atom.Core\Atom.Core.vbproj">

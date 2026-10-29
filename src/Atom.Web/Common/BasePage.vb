@@ -32,6 +32,19 @@ Namespace Common
         Private Const NoPermissionMessage As String = "処理権限がありません。"
 #End Region
 
+#Region "フィールド"
+        ''' <summary>
+        ''' ログインまたは権限の判定で弾いたかどうかです。
+        ''' </summary>
+        ''' <remarks>
+        ''' `Response.Redirect(url, False)` はページの処理を止めません。
+        ''' `CompleteRequest` も残りの HTTP パイプラインを飛ばすだけで、
+        ''' **現在のページのライフサイクルは最後まで動きます。**
+        ''' そのため、この印を見てポストバックイベントと描画を止めます。
+        ''' </remarks>
+        Private _isAccessDenied As Boolean = False
+#End Region
+
 #Region "プロパティ"
         ''' <summary>
         ''' 権限判定に使うメニュー番号です。0 のときは判定しません。
@@ -62,6 +75,20 @@ Namespace Common
         Public ReadOnly Property IsRedirecting As Boolean
             Get
                 Return Me.Response.IsRequestBeingRedirected
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' ログインまたは権限の判定で弾かれたかどうかです。
+        ''' </summary>
+        ''' <remarks>
+        ''' 各画面の更新処理の入口でも、この値を見て中断してください。
+        ''' 基底クラス側でもポストバックイベントと描画を止めますが、
+        ''' 二重に守るためです（開発基本方針「処理の入口でも判定」）。
+        ''' </remarks>
+        Protected ReadOnly Property IsAccessDenied As Boolean
+            Get
+                Return Me._isAccessDenied
             End Get
         End Property
 #End Region
@@ -180,6 +207,7 @@ Namespace Common
 
             ' ログインが必要な画面に未ログインで来たとき
             If Me.RequiresLogin AndAlso Not SessionContext.Current.IsLoggedIn() Then
+                Me._isAccessDenied = True
                 Me.RedirectToLogin()
                 Return
             End If
@@ -218,11 +246,50 @@ Namespace Common
 
             ' 権限が無いとき
             If Not PermissionChecker.IsAllowed(Me.MenuNo) Then
+                Me._isAccessDenied = True
                 Me.RedirectTo(MenuUrl & "?denied=" & Me.MenuNo.ToString())
                 Return
             End If
 
             MyBase.OnLoad(e)
+        End Sub
+
+        ''' <summary>
+        ''' ポストバックのイベントを発生させるときの処理です。
+        ''' 弾かれているときはイベントを発生させません。
+        ''' </summary>
+        ''' <param name="sourceControl">イベントの発生元。</param>
+        ''' <param name="eventArgument">イベントの引数。</param>
+        ''' <remarks>
+        ''' **ここを止めないと、未ログインのままボタンの処理が動きます。**
+        ''' ログインの判定は OnPreInit で行いますが、`Response.Redirect(url, False)` は
+        ''' ページの処理を止めないため、この後も `RaisePostBackEvent` が呼ばれ、
+        ''' 各画面の Click ハンドラ（登録処理など）が動いてしまいます。
+        ''' </remarks>
+        Protected Overrides Sub RaisePostBackEvent(sourceControl As IPostBackEventHandler, eventArgument As String)
+            ' 弾かれているとき
+            If Me._isAccessDenied Then
+                Return
+            End If
+
+            MyBase.RaisePostBackEvent(sourceControl, eventArgument)
+        End Sub
+
+        ''' <summary>
+        ''' 画面を描画するときの処理です。弾かれているときは何も描画しません。
+        ''' </summary>
+        ''' <param name="writer">出力先。</param>
+        ''' <remarks>
+        ''' 遷移を指示していても描画は動くため、中身が一瞬見えたり、
+        ''' ViewState や画面の内容が応答に混ざったりします。ここで止めます。
+        ''' </remarks>
+        Protected Overrides Sub Render(writer As HtmlTextWriter)
+            ' 弾かれているとき
+            If Me._isAccessDenied Then
+                Return
+            End If
+
+            MyBase.Render(writer)
         End Sub
 #End Region
 

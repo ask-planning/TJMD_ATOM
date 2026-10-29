@@ -4,6 +4,7 @@ Option Infer Off
 
 Imports System.Data.SqlClient
 Imports Atom.Core.Entities
+Imports Atom.Core.Services
 Imports Atom.Data.Repositories
 Imports Atom.Web.Common
 
@@ -79,7 +80,10 @@ Namespace Pages.Common
                 Return
             End If
 
-            Dim loginCode As String = Me.txtLoginCode.Text.Trim()
+            ' 全角で入力されても半角で扱う（入力欄にも揃えた値を戻す）
+            Dim loginCode As String = TextNormalizer.ToHalfWidthAndTrim(Me.txtLoginCode.Text)
+            Me.txtLoginCode.Text = loginCode
+
             ' 桁数が 6 桁でないとき
             If loginCode.Length <> LoginCodeLength Then
                 Me.ShowMessage(InvalidLengthMessage, True)
