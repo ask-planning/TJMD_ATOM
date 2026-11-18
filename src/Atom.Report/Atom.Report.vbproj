@@ -52,6 +52,7 @@
     <Compile Include="SvfDataFileWriter.vb" />
     <Compile Include="HaisoTehaiForm.vb" />
     <Compile Include="HaisoTehaiReportWriter.vb" />
+    <Compile Include="NyukaMeisaiReportWriter.vb" />
     <Compile Include="SvfPdfStore.vb" />
   </ItemGroup>
   <ItemGroup>

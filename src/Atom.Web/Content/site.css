@@ -1,41 +1,83 @@
 ﻿@charset "utf-8";
 
 /* ATOM 共通スタイル
-   色は共通変数として一元管理し、各画面で HEX を直接書きません。 */
+
+   デザインの方針（2026-10-29 更新。旧 Access の見た目の踏襲はやめました）
+   ・薄いグレーの地に、白いカードを並べる
+   ・角を丸め、枠線ではなく淡い影で区切る
+   ・入力欄のラベルは欄の上に置き、欄は大きめに取る
+   ・色は青 1 色をアクセントにし、他はグレーの濃淡で表す
+
+   色・角丸・影・余白は共通変数として一元管理し、各画面で直接書きません。 */
 
 :root {
-    --atom-header-bg: #400080;
-    --atom-header-text: #FFFFFF;
-    --atom-version-text: #FFFF00;
-    --atom-button-bg: #E1E1E1;
-    --atom-button-border: #ADADAD;
-    --atom-user-border: #000080;
+    /* ---- 下地と文字 ---- */
+    --atom-body-bg: #F7F8FA;
+    --atom-surface: #FFFFFF;
+    --atom-surface-soft: #F7F8FA;
+    --atom-text: #1F2328;
+    --atom-text-muted: #6B7686;
+    --atom-disabled-text: #A6AEBB;
 
-    --atom-menu-blue-bg: #99CCFF;
-    --atom-menu-pink-bg: #FF80FF;
-    --atom-menu-button-bg: #E1E1E1;
-    --atom-menu-border: #0000A0;
-    --atom-menu-blue-text: #0000A0;
+    /* ---- 線 ---- */
+    --atom-line: #E6E9EE;
+    --atom-line-strong: #D5DAE2;
 
-    --atom-body-bg: #FFFFFF;
-    --atom-text: #222222;
-    --atom-disabled-text: #808080;
-    --atom-error-bg: #FFE6E6;
-    --atom-error-text: #A00000;
-    --atom-information-bg: #E6F0FF;
-    --atom-information-text: #003080;
+    /* ---- アクセント（青） ---- */
+    --atom-accent: #2563A8;
+    --atom-accent-dark: #1F5490;
+    --atom-accent-weak: #EAF1FA;
 
-    /* 一覧（旧 Access のフォームに合わせた配色）
-       INVOICE は白、PACKING は薄い黄色の入力欄で、外側は薄い青。 */
-    --atom-grid-area-bg: #D6E6F7;
-    --atom-grid-head-bg: #D8D8D8;
-    --atom-cell-border: #3A62A8;
+    /* ---- 状態 ---- */
+    --atom-error-bg: #FDEEF0;
+    --atom-error-text: #B4303A;
+    --atom-information-bg: #EAF1FA;
+    --atom-information-text: #1B4A8A;
+    --atom-warning-bg: #FFF6E3;
+
+    /* ---- 角丸 ---- */
+    --atom-radius-s: 6px;
+    --atom-radius: 8px;
+    --atom-radius-l: 12px;
+    --atom-radius-pill: 999px;
+
+    /* ---- 影 ---- */
+    --atom-shadow: 0 1px 3px rgba(16, 24, 40, 0.07), 0 1px 2px rgba(16, 24, 40, 0.04);
+    --atom-shadow-strong: 0 4px 16px rgba(16, 24, 40, 0.10);
+
+    /* ---- 寸法 ---- */
+    --atom-header-height: 60px;
+    --atom-block-width: 282px;
+
+    /* 画面の中身を収める幅。大きなモニターで左右に広がりすぎないよう中央へ寄せます。
+       ここを変えればヘッダー・メッセージ・コンテンツがまとめて揃います。 */
+    --atom-page-width: 1400px;
+
+    /* 画面の左右に空ける余白。狭い画面では末尾のメディアクエリで詰めます。 */
+    --atom-page-gutter: 20px;
+
+    /* メニューのブロックと一覧の色分けに使います。 */
+    --atom-menu-border: var(--atom-line-strong);
+    --atom-menu-blue-text: var(--atom-accent);
+    --atom-menu-pink-text: #8A4BBD;
+    --atom-grid-head-bg: var(--atom-surface-soft);
+    --atom-cell-border: var(--atom-line-strong);
     --atom-cell-bg: #FFFFFF;
-    --atom-cell-bg-sub: #FFFFCC;
-    --atom-grid-warning-bg: #FFF7DC;
+    --atom-cell-bg-sub: #FFFDF0;
 
-    --atom-header-height: 48px;
-    --atom-block-width: 280px;
+    /* ---- 旧デザインから残している名前 ----
+       各画面の <style> がまだ参照しているため、当面は新しい色へ読み替えて残します。
+       画面側を順に直し、参照が無くなった時点で削除してください。 */
+    --atom-button-border: var(--atom-line-strong);
+    --atom-button-bg: #EEF1F6;
+    --atom-menu-button-bg: var(--atom-surface-soft);
+    --atom-menu-blue-bg: var(--atom-accent-weak);
+    --atom-menu-pink-bg: #F4ECFB;
+    --atom-grid-area-bg: var(--atom-surface-soft);
+    --atom-user-border: var(--atom-line);
+    --atom-version-text: var(--atom-disabled-text);
+    --atom-header-bg: var(--atom-surface);
+    --atom-header-text: var(--atom-text);
 }
 
 * {
@@ -48,26 +90,33 @@ body {
     padding: 0;
     background-color: var(--atom-body-bg);
     color: var(--atom-text);
-    font-family: "Meiryo", "Yu Gothic", "MS PGothic", sans-serif;
+    font-family: "Meiryo", "Yu Gothic", "Hiragino Kaku Gothic ProN", "MS PGothic", sans-serif;
     font-size: 14px;
+    line-height: 1.6;
 }
 
 /* ------------------------------------------------------------------
    共通ヘッダー
    ------------------------------------------------------------------ */
 
+/* 帯は全幅のまま、中の要素だけを中央の幅に収めます。
+   左右の余白を padding で作るため、マークアップを足さずに済みます。
+   帯を切ってしまうと画面の上が途切れて見えるため、この形にしています。 */
 .atom-header {
     position: sticky;
     top: 0;
     z-index: 10;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
     width: 100%;
     height: var(--atom-header-height);
-    padding: 0 8px;
-    background-color: var(--atom-header-bg);
-    color: var(--atom-header-text);
+    padding: 0 calc(max(var(--atom-page-gutter), (100% - var(--atom-page-width)) / 2));
+    /* 下の線の色は画面ごとに変わります（HeaderControl が style で入れます）。
+       既定の色をここに置き、設定が無い画面でも線が消えないようにします。 */
+    border-bottom: 2px solid var(--atom-line-strong);
+    background-color: var(--atom-surface);
+    color: var(--atom-text);
 }
 
 .atom-header-icons {
@@ -80,20 +129,26 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     padding: 0;
-    border: 1px solid var(--atom-button-border);
-    background-color: var(--atom-button-bg);
+    border: 0;
+    border-radius: var(--atom-radius-pill);
+    background-color: transparent;
+    color: var(--atom-text-muted);
     cursor: pointer;
 }
 
 .atom-header-icon:hover {
-    filter: brightness(0.95);
+    background-color: #EEF1F6;
+    color: var(--atom-text);
 }
 
 .atom-header-title {
+    display: flex;
     flex: 1 1 auto;
+    align-items: center;
+    gap: 16px;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
@@ -101,6 +156,7 @@ body {
 
 .atom-header-logo {
     display: flex;
+    flex: 0 0 auto;
     align-items: baseline;
     gap: 8px;
     min-width: 0;
@@ -108,34 +164,41 @@ body {
 
 .atom-header-logo-main {
     flex: 0 0 auto;
-    padding: 0 8px;
-    border: 1px solid var(--atom-header-text);
-    font-size: 28px;
+    padding: 0;
+    border: 0;
+    color: var(--atom-accent);
+    font-size: 20px;
     font-weight: bold;
+    letter-spacing: 0.04em;
     line-height: 1.2;
 }
 
 .atom-header-logo-sub {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     overflow: hidden;
-    font-size: 15px;
-    font-weight: bold;
+    color: var(--atom-text-muted);
+    font-size: 12px;
+    font-weight: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .atom-header-logo-version {
     flex: 0 0 auto;
-    color: var(--atom-version-text);
-    font-size: 15px;
-    font-style: italic;
-    font-weight: bold;
+    color: var(--atom-disabled-text);
+    font-size: 11px;
+    font-style: normal;
+    font-weight: normal;
 }
 
+/* 画面名。システム名との間に区切りを入れて、所属が分かるようにします。 */
 .atom-header-screen {
     overflow: hidden;
-    font-size: 20px;
-    font-weight: bold;
+    padding-left: 16px;
+    border-left: 1px solid var(--atom-line);
+    color: var(--atom-text-muted);
+    font-size: 14px;
+    font-weight: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -143,45 +206,65 @@ body {
 .atom-header-actions {
     display: flex;
     flex: 0 0 auto;
-    gap: 4px;
+    gap: 6px;
 }
 
 .atom-header-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 92px;
-    height: 32px;
-    padding: 0 10px;
-    border: 1px solid var(--atom-button-border);
-    background-color: var(--atom-button-bg);
-    color: var(--atom-header-bg);
-    font-weight: bold;
+    min-width: 0;
+    height: 34px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: var(--atom-radius-pill);
+    background-color: #EEF1F6;
+    color: #344054;
+    font-size: 12.5px;
+    font-weight: normal;
     text-decoration: none;
     white-space: nowrap;
 }
 
 .atom-header-action:hover {
-    filter: brightness(0.95);
+    background-color: #E2E8F0;
+    filter: none;
 }
 
 .atom-header-user {
     flex: 0 0 auto;
 }
 
+/* 利用者名。頭文字の丸を添えて、誰で入っているかが分かるようにします。 */
 .atom-header-user-box {
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-width: 140px;
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
     max-width: 240px;
-    height: 32px;
-    padding: 0 8px;
+    height: 34px;
+    padding: 0 6px 0 0;
     overflow: hidden;
-    border: 1px solid var(--atom-user-border);
-    color: var(--atom-header-text);
+    border: 0;
+    color: #344054;
+    font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* 利用者名の頭 1 文字。丸く塗って目印にします。 */
+.atom-header-user-initial {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--atom-radius-pill);
+    background-color: var(--atom-accent);
+    color: var(--atom-surface);
+    font-size: 12px;
 }
 
 /* ------------------------------------------------------------------
@@ -189,19 +272,21 @@ body {
    ------------------------------------------------------------------ */
 
 .atom-message {
-    margin: 8px 16px 0;
-    padding: 8px 12px;
-    border: 1px solid transparent;
+    width: calc(100% - var(--atom-page-gutter) * 2);
+    max-width: calc(var(--atom-page-width) - var(--atom-page-gutter) * 2);
+    margin: 16px auto 0;
+    padding: 13px 16px;
+    border: 0;
+    border-radius: var(--atom-radius);
+    font-size: 13px;
 }
 
 .atom-message-information {
-    border-color: var(--atom-information-text);
     background-color: var(--atom-information-bg);
     color: var(--atom-information-text);
 }
 
 .atom-message-error {
-    border-color: var(--atom-error-text);
     background-color: var(--atom-error-bg);
     color: var(--atom-error-text);
 }
@@ -210,29 +295,43 @@ body {
    コンテンツ
    ------------------------------------------------------------------ */
 
+/* 画面の中身。大きなモニターで左右へ広がりすぎないよう、
+   最大幅で止めて中央へ寄せます。幅は --atom-page-width で一括して変えられます。 */
 .atom-content {
-    padding: 16px;
+    max-width: var(--atom-page-width);
+    margin: 0 auto;
+    padding: 24px var(--atom-page-gutter) 40px;
 }
 
 /* ------------------------------------------------------------------
    入力フォーム（業務画面共通）
    ------------------------------------------------------------------ */
 
+/* 入力のかたまりは白いカードに載せます。 */
 .atom-form {
     max-width: 760px;
-    margin: 8px 0 0;
+    margin: 0;
+    padding: 22px;
+    border-radius: var(--atom-radius-l);
+    background-color: var(--atom-surface);
+    box-shadow: var(--atom-shadow);
 }
 
+/* ラベルは欄の上に置きます。横並びより縦に長くなりますが、
+   項目名と入力欄の対応が目で追いやすくなります。 */
 .atom-form-row {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    margin-bottom: 16px;
 }
 
 .atom-form-label {
-    flex: 0 0 150px;
-    text-align: right;
+    flex: 0 0 auto;
+    color: var(--atom-text-muted);
+    font-size: 12px;
+    text-align: left;
 }
 
 .atom-form-field {
@@ -240,15 +339,32 @@ body {
     min-width: 0;
 }
 
+.atom-radio-list {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 4px 0;
+}
+
 .atom-radio-list label {
-    margin-right: 16px;
+    margin-right: 0;
 }
 
 .atom-select,
 .atom-file {
-    padding: 4px 6px;
-    border: 1px solid var(--atom-button-border);
+    padding: 9px 12px;
+    border: 1px solid var(--atom-line-strong);
+    border-radius: var(--atom-radius);
+    background-color: var(--atom-surface);
+    color: var(--atom-text);
+    font-family: inherit;
     font-size: 14px;
+}
+
+.atom-select:focus,
+.atom-file:focus {
+    border-color: var(--atom-accent);
+    outline: 3px solid var(--atom-accent-weak);
 }
 
 /* 取り込んだファイル名の表示です。 */
@@ -261,40 +377,59 @@ body {
 
 .atom-readonly {
     width: 100%;
-    padding: 6px 8px;
-    border: 1px solid var(--atom-button-border);
-    background-color: #E9E9E9;
-    color: var(--atom-text);
+    padding: 9px 12px;
+    border: 1px solid var(--atom-line-strong);
+    border-radius: var(--atom-radius);
+    background-color: #F2F4F7;
+    color: #475467;
+    font-family: inherit;
+    font-size: 14px;
 }
 
+/* ラベルを上に置いたため、ボタンの左に空ける余白は不要になりました。 */
 .atom-form-buttons {
     display: flex;
-    gap: 12px;
-    margin-top: 24px;
-    padding-left: 162px;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    padding-left: 0;
 }
 
 .atom-action-button {
-    min-width: 150px;
-    padding: 10px 8px;
-    border: 1px solid var(--atom-button-border);
-    background-color: var(--atom-menu-button-bg);
-    color: var(--atom-text);
+    min-width: 0;
+    padding: 10px 22px;
+    border: 1px solid var(--atom-line-strong);
+    border-radius: var(--atom-radius);
+    background-color: var(--atom-surface);
+    color: #344054;
     cursor: pointer;
-    font-size: 15px;
+    font-family: inherit;
+    font-size: 13px;
 }
 
 .atom-action-button:hover {
-    filter: brightness(0.95);
+    border-color: var(--atom-accent);
+    background-color: var(--atom-accent-weak);
+    color: var(--atom-accent);
+    filter: none;
 }
 
 .atom-action-primary {
-    border-color: var(--atom-menu-border);
-    color: var(--atom-menu-blue-text);
-    font-weight: bold;
+    border-color: var(--atom-accent);
+    background-color: var(--atom-accent);
+    color: var(--atom-surface);
+    font-weight: normal;
+}
+
+.atom-action-primary:hover {
+    border-color: var(--atom-accent-dark);
+    background-color: var(--atom-accent-dark);
+    color: var(--atom-surface);
 }
 
 .atom-action-button[disabled] {
+    border-color: var(--atom-line);
+    background-color: #F2F4F7;
     color: var(--atom-disabled-text);
     cursor: default;
 }
@@ -315,16 +450,21 @@ body {
 /* 処理中に操作させないための指定です。a 要素は disabled 属性を持てないため
    スクリプトからこのクラスを付けます。 */
 .atom-action-disabled {
+    background-color: #F2F4F7;
     color: var(--atom-disabled-text);
     cursor: default;
     pointer-events: none;
 }
 
-/* 画面の操作を補足する説明文です。 */
+/* 画面の操作を補足する説明文です。本文と混ざらないよう、薄い面に載せます。 */
 .atom-form-note {
-    margin: 12px 0 0;
-    font-size: 13px;
-    line-height: 1.6;
+    margin: 16px 0 0;
+    padding: 14px 16px;
+    border-radius: var(--atom-radius);
+    background-color: var(--atom-surface-soft);
+    color: #475467;
+    font-size: 12.5px;
+    line-height: 1.8;
 }
 
 /* ------------------------------------------------------------------
@@ -334,8 +474,9 @@ body {
 .atom-processing {
     display: none;
     margin: 16px 0 0;
-    padding: 12px;
-    border: 1px solid var(--atom-information-text);
+    padding: 13px 16px;
+    border: 0;
+    border-radius: var(--atom-radius);
     background-color: var(--atom-information-bg);
     color: var(--atom-information-text);
 }
@@ -350,26 +491,29 @@ body {
     justify-content: center;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.4);
+    padding: 16px;
+    background-color: rgba(16, 24, 40, 0.45);
 }
 
 .atom-modal-box {
     max-width: 520px;
-    padding: 24px;
-    border: 1px solid var(--atom-menu-border);
-    background-color: var(--atom-body-bg);
+    padding: 26px;
+    border: 0;
+    border-radius: var(--atom-radius-l);
+    background-color: var(--atom-surface);
+    box-shadow: var(--atom-shadow-strong);
 }
 
 .atom-modal-message {
-    margin: 0 0 20px;
+    margin: 0 0 22px;
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 .atom-modal-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     justify-content: flex-end;
 }
 
@@ -378,39 +522,49 @@ body {
    ------------------------------------------------------------------ */
 
 .atom-page-title {
-    margin: 0 0 16px;
+    margin: 0 0 18px;
     font-size: 18px;
     font-weight: bold;
 }
 
+/* タブは線で囲まず、選択中だけを塗って示します。 */
 .atom-tab {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 110px;
-    padding: 8px 16px;
-    border: 1px solid var(--atom-button-border);
-    border-bottom: none;
-    background-color: var(--atom-menu-button-bg);
-    color: var(--atom-text);
-    font-size: 14px;
+    padding: 9px 20px;
+    border: 0;
+    border-radius: var(--atom-radius-pill);
+    background-color: #EEF1F6;
+    color: var(--atom-text-muted);
+    font-size: 13px;
     text-decoration: none;
 }
 
 .atom-tab:hover {
-    filter: brightness(0.95);
+    background-color: #E2E8F0;
+    filter: none;
 }
 
 .atom-tab-active {
-    border-color: var(--atom-menu-border);
-    background-color: var(--atom-body-bg);
-    color: var(--atom-menu-blue-text);
+    background-color: var(--atom-accent);
+    color: var(--atom-surface);
     font-weight: bold;
 }
 
+.atom-tab-active:hover {
+    background-color: var(--atom-accent-dark);
+    color: var(--atom-surface);
+}
+
+/* 一覧は白い面に載せ、区切りは下線だけにします。
+   縦横に罫線を引くと、列が多いときに目が疲れるためです。 */
 .atom-grid {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: var(--atom-surface);
     font-size: 13px;
 }
 
@@ -418,29 +572,49 @@ body {
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 6px 8px;
-    border: 1px solid var(--atom-button-border);
+    padding: 12px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--atom-line-strong);
     background-color: var(--atom-grid-head-bg);
-    text-align: center;
+    color: var(--atom-text-muted);
+    font-size: 12px;
+    text-align: left;
     white-space: nowrap;
 }
 
 .atom-grid td {
-    padding: 2px 4px;
-    border: 1px solid var(--atom-button-border);
-    background-color: var(--atom-grid-area-bg);
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--atom-line);
+    background-color: var(--atom-surface);
     white-space: nowrap;
+}
+
+.atom-grid tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.atom-grid tbody tr:hover td {
+    background-color: #FAFBFC;
 }
 
 .atom-grid-number {
     text-align: right;
 }
 
-/* 一覧の中の入力欄。旧 Access と同じく、枠と背景で「直せる欄」だと分かるようにする */
+/* 一覧の中の選択欄。フォームと同じ大きさだと行が高くなりすぎるため小さくします。 */
+.atom-grid .atom-select {
+    padding: 6px 9px;
+    border-radius: var(--atom-radius-s);
+    font-size: 13px;
+}
+
+/* 一覧の中の入力欄。枠と背景で「直せる欄」だと分かるようにします。 */
 .atom-cell {
     width: 130px;
-    padding: 2px 4px;
-    border: 1px solid var(--atom-cell-border);
+    padding: 6px 9px;
+    border: 1px solid var(--atom-line-strong);
+    border-radius: var(--atom-radius-s);
     background-color: var(--atom-cell-bg);
     color: var(--atom-text);
     font-family: inherit;
@@ -453,8 +627,8 @@ body {
 }
 
 .atom-cell:focus {
-    border-color: var(--atom-menu-border);
-    outline: 1px solid var(--atom-menu-border);
+    border-color: var(--atom-accent);
+    outline: 3px solid var(--atom-accent-weak);
 }
 
 .atom-cell-number {
@@ -475,7 +649,7 @@ body {
     width: 220px;
 }
 
-/* チェック結果の欄。旧 Access と同じく赤字で表示する */
+/* チェック結果の欄。赤字で表示します。 */
 .atom-grid-err {
     color: var(--atom-error-text);
     font-weight: bold;
@@ -493,7 +667,7 @@ body {
 }
 
 .atom-grid-row-warning td {
-    background-color: var(--atom-grid-warning-bg);
+    background-color: var(--atom-warning-bg);
 }
 
 .atom-grid-row-warning .atom-cell {
@@ -509,6 +683,54 @@ body {
    ------------------------------------------------------------------ */
 
 .atom-validator {
+    display: inline-block;
+    margin-top: 4px;
     color: var(--atom-error-text);
-    font-size: 13px;
+    font-size: 12.5px;
 }
+
+/* ------------------------------------------------------------------
+   画面幅に応じた調整
+
+   幅の基準は --atom-page-width（1400px）です。
+   それより広いモニターでは左右に余白ができ、中身は中央に寄ります。
+   ここでは、狭くなったときに窮屈にならないよう詰めていきます。
+   ------------------------------------------------------------------ */
+
+/* ノート PC など（横幅が基準に届かないとき）
+   左右の余白を詰めて、表示できる幅を稼ぎます。 */
+@media screen and (max-width: 1200px) {
+    :root {
+        --atom-page-gutter: 14px;
+    }
+
+    .atom-header-action {
+        padding: 0 12px;
+    }
+}
+
+/* 横に並べきれなくなったとき
+   ヘッダーの高さを詰め、ボタンを縦に積みます。
+   入力欄のラベルはもともと上にあるため、ここでは触りません。 */
+@media screen and (max-width: 900px) {
+    :root {
+        --atom-page-gutter: 10px;
+        --atom-header-height: 52px;
+    }
+
+    .atom-header-logo-sub,
+    .atom-header-logo-version {
+        display: none;
+    }
+
+    .atom-form-buttons {
+        flex-direction: column;
+    }
+
+    .atom-action-button {
+        width: 100%;
+    }
+}
+
+/* 一覧（.atom-grid-area）は各画面側で overflow: auto にしています。
+   列が多く、縮めると読めなくなるため、幅を詰めずに横スクロールさせます。 */

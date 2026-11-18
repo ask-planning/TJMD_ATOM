@@ -164,6 +164,9 @@ Namespace Entities
         ''' <summary>カートン数の合計。</summary>
         Public Property TotalCarton As Integer?
 
+        ''' <summary>数量の合計。AIR の様式（pcs）で使います。</summary>
+        Public Property TotalQuantity As Integer?
+
         ''' <summary>配送予定日。</summary>
         Public Property HaisoYoteiYmd As Date?
 

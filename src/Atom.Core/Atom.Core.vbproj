@@ -72,6 +72,7 @@
     <Compile Include="Entities\ImportCheckResult.vb" />
     <Compile Include="Entities\Koumoku.vb" />
     <Compile Include="Entities\LoginUser.vb" />
+    <Compile Include="Entities\ShanghaiNyukaMeisai.vb" />
     <Compile Include="Entities\ShanghaiImportField.vb" />
     <Compile Include="Entities\ShanghaiInvoiceHeader.vb" />
     <Compile Include="Entities\ShanghaiHaisoTehai.vb" />

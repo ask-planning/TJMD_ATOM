@@ -112,13 +112,22 @@ Namespace Pages.Entry
         ''' <summary>出力対象が無かったときの文言。</summary>
         Private Const HaisoTehaiEmptyMessage As String = "出力できる明細がありません。"
 
-        ''' <summary>AIR の様式が未作成であることを伝える文言。</summary>
-        Private Const HaisoTehaiAirSkippedMessage As String =
-            "（AIR の明細は様式が未作成のため出力していません。）"
-
         ''' <summary>SVF の設定が足りないときの文言。</summary>
         Private Const SvfSettingMissingMessage As String =
             "SVF の設定が不足しています。管理者へ連絡してください。"
+
+        ''' <summary>入荷明細書の発行を受け付けたときの文言。</summary>
+        Private Const NyukaMeisaiAcceptedMessage As String =
+            "入荷明細書の出力を開始しました。しばらくしてから「表示」を押してください。"
+
+        ''' <summary>入荷明細書の出力対象が無かったときの文言。</summary>
+        Private Const NyukaMeisaiEmptyMessage As String = "出力できる明細がありません。"
+
+        ''' <summary>作成済みの入荷明細が無いときの文言。</summary>
+        Private Const NyukaMeisaiNewMessage As String = "入荷明細を新規作成します。よろしいですか。"
+
+        ''' <summary>最終更新日の表示書式。</summary>
+        Private Const DateTimeFormat As String = "yyyy/MM/dd HH:mm"
 #End Region
 
 #Region "フィールド"
@@ -130,6 +139,12 @@ Namespace Pages.Entry
 
         ''' <summary>配送手配書の連携ファイルの組み立て。</summary>
         Private ReadOnly _haisoTehaiWriter As New HaisoTehaiReportWriter()
+
+        ''' <summary>入荷明細書の業務処理。</summary>
+        Private ReadOnly _nyukaMeisaiService As New ShanghaiNyukaMeisaiService()
+
+        ''' <summary>入荷明細書の連携ファイルの組み立て。</summary>
+        Private ReadOnly _nyukaMeisaiWriter As New NyukaMeisaiReportWriter()
 
         ''' <summary>SVF が出力した PDF の扱い。</summary>
         Private ReadOnly _pdfStore As New SvfPdfStore()
@@ -403,18 +418,13 @@ Namespace Pages.Entry
                 Dim written As HaisoTehaiWriteResult =
                     Me._haisoTehaiWriter.Write(settings, result.Rows, loginCode, now)
 
-                Dim message As String = HaisoTehaiAcceptedMessage
-                ' AIR の明細があったとき
-                If written.SkippedAirCount > 0 Then
-                    message &= HaisoTehaiAirSkippedMessage
-                End If
                 ' 1 本も出せなかったとき
                 If Not written.HasOutput Then
-                    Me.ShowMessage(HaisoTehaiEmptyMessage & HaisoTehaiAirSkippedMessage, True)
+                    Me.ShowMessage(HaisoTehaiEmptyMessage, True)
                     Return
                 End If
 
-                Me.ShowMessage(message, False)
+                Me.ShowMessage(HaisoTehaiAcceptedMessage, False)
             Catch ex As UnauthorizedAccessException
                 Me.ShowMessage("SVF のフォルダへ書き込めません。管理者へ連絡してください。", True)
                 Logger.WriteError(LogSource, "SVF のフォルダへ書き込めません。", ex, loginCode)
@@ -429,18 +439,195 @@ Namespace Pages.Entry
         ''' </summary>
         ''' <param name="sender">イベントの発生元。</param>
         ''' <param name="e">イベント引数。</param>
+        ''' <remarks>
+        ''' 設計書 §11.2。**ここでは印刷しません。**作成済みの入荷明細があるかを調べ、
+        ''' どうするかを利用者に選んでもらいます。作り直すと既存の明細が消えるため、
+        ''' 押しただけで消えないようにしています。
+        ''' </remarks>
         Private Sub BtnNyukaMeisai_Click(sender As Object, e As EventArgs) Handles btnNyukaMeisai.Click
-            Me.ShowMessage(NotImplementedMessage, False)
+            ' 権限が無いとき（基底クラスでも止めているが、処理の入口でも判定する）
+            If Me.IsAccessDenied Then
+                Return
+            End If
+
+            Dim check As ShanghaiNyukaMeisaiCheckResult =
+                Me._nyukaMeisaiService.CheckExisting(Me.CurrentShanghaiChotatsu(), Me.SelectedInvoiceNoMain)
+
+            ' 入力に問題があったとき
+            If Not String.IsNullOrEmpty(check.ValidationMessage) Then
+                Me.HideNyukaConfirm()
+                Me.ShowMessage(check.ValidationMessage, True)
+                Return
+            End If
+
+            Me.ShowNyukaConfirm(check.Kensu)
         End Sub
 
         ''' <summary>
-        ''' 入荷明細書の「表示」を押したときの処理です。
+        ''' 入荷明細書の確認で「作り直す」を押したときの処理です。
         ''' </summary>
         ''' <param name="sender">イベントの発生元。</param>
         ''' <param name="e">イベント引数。</param>
-        Private Sub BtnNyukaMeisaiView_Click(sender As Object, e As EventArgs) Handles btnNyukaMeisaiView.Click
-            Me.ShowMessage(NotImplementedMessage, False)
+        Private Sub BtnNyukaRecreate_Click(sender As Object, e As EventArgs) Handles btnNyukaRecreate.Click
+            Me.PrintNyukaMeisai(True)
         End Sub
+
+        ''' <summary>
+        ''' 入荷明細書の確認で「はい」（新規作成）を押したときの処理です。
+        ''' </summary>
+        ''' <param name="sender">イベントの発生元。</param>
+        ''' <param name="e">イベント引数。</param>
+        Private Sub BtnNyukaCreateYes_Click(sender As Object, e As EventArgs) Handles btnNyukaCreateYes.Click
+            Me.PrintNyukaMeisai(True)
+        End Sub
+
+        ''' <summary>
+        ''' 入荷明細書の確認で「印刷する」を押したときの処理です。
+        ''' </summary>
+        ''' <param name="sender">イベントの発生元。</param>
+        ''' <param name="e">イベント引数。</param>
+        Private Sub BtnNyukaPrint_Click(sender As Object, e As EventArgs) Handles btnNyukaPrint.Click
+            Me.PrintNyukaMeisai(False)
+        End Sub
+
+        ''' <summary>
+        ''' 入荷明細書の確認で「内容を確認する」を押したときの処理です。
+        ''' </summary>
+        ''' <param name="sender">イベントの発生元。</param>
+        ''' <param name="e">イベント引数。</param>
+        ''' <remarks>設計書 §11.2 の選択 2。**印刷せずに**発注確認画面へ移ります。</remarks>
+        Private Sub BtnNyukaGoConfirm_Click(sender As Object, e As EventArgs) Handles btnNyukaGoConfirm.Click
+            Me.HideNyukaConfirm()
+            Me.NavigateTo(PurchaseConfirmMenuNo)
+        End Sub
+
+        ''' <summary>
+        ''' 入荷明細書の確認で「いいえ」を押したときの処理です。
+        ''' </summary>
+        ''' <param name="sender">イベントの発生元。</param>
+        ''' <param name="e">イベント引数。</param>
+        Private Sub BtnNyukaCancel_Click(sender As Object, e As EventArgs) Handles btnNyukaCancel.Click
+            Me.HideNyukaConfirm()
+        End Sub
+#End Region
+
+#Region "内部処理（入荷明細書）"
+        ''' <summary>
+        ''' 入荷明細書の確認を表示します。
+        ''' </summary>
+        ''' <param name="kensu">作成済みの件数と最終更新日。</param>
+        ''' <remarks>
+        ''' 設計書 §11.2。作成済みがあるときは 3 つの選択肢、無いときは新規作成の可否を出します。
+        ''' ボタンはマークアップに全部書いてあるので、ここでは出し分けるだけです。
+        ''' </remarks>
+        Private Sub ShowNyukaConfirm(kensu As ShanghaiNyukaMeisaiKensu)
+            Dim hasExisting As Boolean = kensu.Count <> 0
+
+            Me.pnlNyukaConfirm.Visible = True
+            Me.btnNyukaRecreate.Visible = hasExisting
+            Me.btnNyukaGoConfirm.Visible = hasExisting
+            Me.btnNyukaPrint.Visible = hasExisting
+            Me.btnNyukaCreateYes.Visible = Not hasExisting
+            Me.btnNyukaCancel.Visible = True
+
+            ' 作成済みがあるとき
+            If hasExisting Then
+                Me.litNyukaConfirmMessage.Text =
+                    "現在作成済みのINVOICEの最終更新日は " & Me.ToDateTimeText(kensu.UpdatedAt) & " です。"
+                Return
+            End If
+
+            Me.litNyukaConfirmMessage.Text = NyukaMeisaiNewMessage
+        End Sub
+
+        ''' <summary>
+        ''' 入荷明細書の確認を隠します。
+        ''' </summary>
+        Private Sub HideNyukaConfirm()
+            Me.pnlNyukaConfirm.Visible = False
+            Me.litNyukaConfirmMessage.Text = String.Empty
+        End Sub
+
+        ''' <summary>
+        ''' 入荷明細書を出力します。
+        ''' </summary>
+        ''' <param name="recreate">入荷明細を作り直すときは True。</param>
+        ''' <remarks>
+        ''' 設計書 §11.3。出力の前に**入荷明細書の PDF だけ**を削除し、
+        ''' 連携ファイルを SVF の監視フォルダへ置きます。
+        ''' PDF ができるまで待たず、利用者が「表示」を押した時点で確かめます。
+        '''
+        ''' **進捗状況の更新（処理NO 10）は未実装です。**
+        ''' </remarks>
+        Private Sub PrintNyukaMeisai(recreate As Boolean)
+            ' 権限が無いとき
+            If Me.IsAccessDenied Then
+                Return
+            End If
+
+            Me.HideNyukaConfirm()
+
+            Dim settings As SvfReportSettings = CreateSvfSettings()
+            ' 設定が足りないとき
+            If Not IsSvfSettingReady(settings) Then
+                Me.ShowMessage(SvfSettingMissingMessage, True)
+                Return
+            End If
+
+            Dim invoiceNoMain As String = Me.SelectedInvoiceNoMain
+            Dim loginCode As String = SessionContext.Current.LoginCode
+            Dim now As Date = DateTime.Now
+
+            Dim result As ShanghaiNyukaMeisaiResult =
+                Me._nyukaMeisaiService.CreateReport(loginCode, Me.CurrentShanghaiChotatsu(), invoiceNoMain, recreate)
+
+            ' 入力に問題があったとき
+            If Not String.IsNullOrEmpty(result.ValidationMessage) Then
+                Me.ShowMessage(result.ValidationMessage, True)
+                Return
+            End If
+
+            ' 対象が 1 件も無いとき
+            If result.Rows.Count = 0 Then
+                Me.ShowMessage(NyukaMeisaiEmptyMessage, True)
+                Return
+            End If
+
+            Try
+                ' 先に入荷明細書の PDF を消す（古い内容を今回のものと取り違えないため）
+                Me._pdfStore.Delete(settings.PdfFolderPath, CollectNyukaMeisaiKubuns(), loginCode)
+
+                Dim written As NyukaMeisaiWriteResult =
+                    Me._nyukaMeisaiWriter.Write(settings, result.Rows, loginCode, now)
+
+                ' 1 本も出せなかったとき
+                If Not written.HasOutput Then
+                    Me.ShowMessage(NyukaMeisaiEmptyMessage, True)
+                    Return
+                End If
+
+                Me.ShowMessage(NyukaMeisaiAcceptedMessage, False)
+            Catch ex As UnauthorizedAccessException
+                Me.ShowMessage("SVF のフォルダへ書き込めません。管理者へ連絡してください。", True)
+                Logger.WriteError(LogSource, "SVF のフォルダへ書き込めません。", ex, loginCode)
+            Catch ex As IOException
+                Me.ShowMessage("SVF のフォルダを操作できません。管理者へ連絡してください。", True)
+                Logger.WriteError(LogSource, "SVF のフォルダを操作できません。", ex, loginCode)
+            End Try
+        End Sub
+
+        ''' <summary>
+        ''' 日時を画面に出す書式にします。
+        ''' </summary>
+        ''' <param name="value">元の値。</param>
+        ''' <returns>文字列。値が無いときは空文字。</returns>
+        Private Function ToDateTimeText(value As Date?) As String
+            ' 値が無いとき
+            If Not value.HasValue Then
+                Return String.Empty
+            End If
+            Return value.Value.ToString(DateTimeFormat, CultureInfo.InvariantCulture)
+        End Function
 #End Region
 
 #Region "内部処理（表示）"
@@ -850,9 +1037,20 @@ Namespace Pages.Entry
         ''' </remarks>
         Private Shared Function CollectAllReportKubuns() As IList(Of String)
             Dim kubuns As New List(Of String)()
-            For Each form As HaisoTehaiForm In HaisoTehaiForm.All()
+            For Each form As HaisoTehaiForm In HaisoTehaiForm.HaisoTehaiAll()
                 kubuns.Add(form.ReportKubun)
             Next
+            Return kubuns
+        End Function
+
+        ''' <summary>
+        ''' 入荷明細書の帳票区分を返します。
+        ''' </summary>
+        ''' <returns>帳票区分の一覧。入荷明細書の 1 つだけ。</returns>
+        ''' <remarks>出力の前に消すのは**入荷明細書の PDF だけ**です。</remarks>
+        Private Shared Function CollectNyukaMeisaiKubuns() As IList(Of String)
+            Dim kubuns As New List(Of String)()
+            kubuns.Add(HaisoTehaiForm.NyukaMeisai().ReportKubun)
             Return kubuns
         End Function
 

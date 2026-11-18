@@ -1,0 +1,7 @@
+<start>
+VrSetOutputPrinter="HONKAN_PRNT01"
+VrSetUseReportDirector=1
+VrSetDocName2="配送手配書AIR（テスト）"
+<end>
+帳票区分	login_code	hakko_ymd	atesaki	phone	fax	invoice_no	freight_no	etd	bl_date	eta	total_carton	total_quantity	hannyusaki_name	hannyusaki_address	hannyusaki_phone_no	hannyusaki_tanto	tantosha
+AIR	999999	2026年1月1日	テスト乙仲　テスト担当1	PHONE: 00(0000)0000	FAX : 00(0000)0000	TEST-INV-0006	TEST FREIGHT V.0001	SHANGHAI, CHINA	2026年1月1日	TOKYO, JAPAN	999	12345	テスト配送先2	テスト県テスト市テスト町4-5-6	000-0000-0002	テスト担当2	テスト部門　テスト 太郎

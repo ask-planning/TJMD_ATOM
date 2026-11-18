@@ -14,6 +14,12 @@ Namespace Common
 #Region "定数"
         ''' <summary>権限が無いときにボタンへ添える文言。</summary>
         Private Const NoPermissionText As String = "権限なし"
+
+        ''' <summary>メニューのボタンの CSS クラス。</summary>
+        Private Const MenuButtonClass As String = "atom-menu-button"
+
+        ''' <summary>未実装の画面のボタンに足す CSS クラス。</summary>
+        Private Const MenuButtonPendingClass As String = "atom-menu-button-pending"
 #End Region
 
 #Region "プロパティ"
@@ -68,6 +74,24 @@ Namespace Common
                     Return NoPermissionText
                 End If
                 Return String.Empty
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' メニューのボタンに付ける CSS クラスです。
+        ''' </summary>
+        ''' <returns>未実装のときは薄く見せるクラスを足した文字列。</returns>
+        ''' <remarks>
+        ''' **押せるかどうかは変えません。**押すと「現在未実装です。」が出る動きのままです。
+        ''' 押す前に見分けられるよう、見た目だけを分けています。
+        ''' </remarks>
+        Public ReadOnly Property MenuButtonCssClass As String
+            Get
+                ' 実装済みのとき
+                If Me.IsImplemented Then
+                    Return MenuButtonClass
+                End If
+                Return MenuButtonClass & " " & MenuButtonPendingClass
             End Get
         End Property
 #End Region

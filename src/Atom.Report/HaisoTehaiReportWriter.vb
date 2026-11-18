@@ -36,8 +36,26 @@ Public Class HaisoTehaiReportWriter
     ''' <summary>氏名などをつなぐ全角空白。</summary>
     Private Const WideSpace As String = "　"
 
-    ''' <summary>SVF へ渡すドキュメント名。</summary>
-    Private Const DocumentName As String = "配送手配書"
+    ''' <summary>電話番号に付けるラベル。旧 Access のレポートに合わせます。</summary>
+    Private Const PhoneLabel As String = "PHONE: "
+
+    ''' <summary>FAX 番号に付けるラベル。旧 Access のレポートに合わせます。</summary>
+    Private Const FaxLabel As String = "FAX : "
+
+    ''' <summary>AIR の ETD（出港地）。旧 Access のレポートでは固定式でした。</summary>
+    Private Const Etd As String = "SHANGHAI, CHINA"
+
+    ''' <summary>AIR の ETA（大阪）。</summary>
+    Private Const EtaOsaka As String = "OSAKA, JAPAN"
+
+    ''' <summary>AIR の ETA（東京）。</summary>
+    Private Const EtaTokyo As String = "TOKYO, JAPAN"
+
+    ''' <summary>ETA が大阪になる配送先（センコー）。</summary>
+    Private Const OsakaHaisoSaki As Integer = 31
+
+    ''' <summary>日新の配送タイプ。この明細があると日新入荷も発行します（設計書 §10.5）。</summary>
+    Private Const NisshinHaisoType As Integer = 3
 
     ''' <summary>日本語の書式に使う地域。曜日を日本語で出すために指定します。</summary>
     Private Shared ReadOnly _japaneseCulture As CultureInfo = CultureInfo.GetCultureInfo("ja-JP")
@@ -79,11 +97,12 @@ Public Class HaisoTehaiReportWriter
 
         ' 配送先の箇所数でまとめる。箇所数の昇順で出したいため SortedDictionary を使う
         Dim rowsByCount As New SortedDictionary(Of Integer, List(Of ShanghaiHaisoTehaiReportRow))()
+        Dim airRows As New List(Of ShanghaiHaisoTehaiReportRow)()
 
         For Each row As ShanghaiHaisoTehaiReportRow In rows
-            ' AIR のとき（様式が未作成のため、出さずに控えるだけ）
+            ' AIR のとき（配送先の箇所数ではなく配送タイプで決まる）
             If Me.IsAir(row) Then
-                result.SkippedAirCount += 1
+                airRows.Add(row)
                 Continue For
             End If
 
@@ -101,6 +120,23 @@ Public Class HaisoTehaiReportWriter
             result.Forms.Add(form)
             result.FilePaths.Add(filePath)
         Next
+
+        ' AIR の明細があるとき
+        If airRows.Count > 0 Then
+            Dim airForm As HaisoTehaiForm = HaisoTehaiForm.Air()
+            Dim airPath As String = Me.WriteOneForm(settings, airForm, airRows, loginCode, hakkoYmd)
+            result.Forms.Add(airForm)
+            result.FilePaths.Add(airPath)
+        End If
+
+        ' 日新の明細があるとき（配送手配書に付随して、入荷スケジュールも出します。§10.5）
+        Dim nisshinRows As IList(Of ShanghaiHaisoTehaiReportRow) = Me.CollectNisshinRows(rows)
+        If nisshinRows.Count > 0 Then
+            Dim nisshinForm As HaisoTehaiForm = HaisoTehaiForm.Nisshin()
+            Dim nisshinPath As String = Me.WriteOneForm(settings, nisshinForm, nisshinRows, loginCode, hakkoYmd)
+            result.Forms.Add(nisshinForm)
+            result.FilePaths.Add(nisshinPath)
+        End If
 
         Return result
     End Function
@@ -139,6 +175,40 @@ Public Class HaisoTehaiReportWriter
         headers.Add("tantosha")
         Return headers
     End Function
+
+    ''' <summary>
+    ''' AIR の連携ファイルの見出し行を返します。
+    ''' </summary>
+    ''' <returns>18 列の項目名。</returns>
+    ''' <remarks>
+    ''' `tools/svf/定義AT04配送手配AIR.txt` および `schema.ini` の `[定義AT04配送手配AIR.txt]` と
+    ''' **同じ並び・同じ名前**でなければなりません。
+    '''
+    ''' **AIR だけは項目名を帳票の見出しに合わせています**（設計書 §14.1.1.1）。
+    ''' 定期便の `vessel` がここでは `freight_no` になるなど、**同じ値でも名前が違います。**
+    ''' </remarks>
+    Public Shared Function CreateAirHeaders() As IList(Of String)
+        Dim headers As New List(Of String)()
+        headers.Add("帳票区分")
+        headers.Add("login_code")
+        headers.Add("hakko_ymd")
+        headers.Add("atesaki")
+        headers.Add("phone")
+        headers.Add("fax")
+        headers.Add("invoice_no")
+        headers.Add("freight_no")
+        headers.Add("etd")
+        headers.Add("bl_date")
+        headers.Add("eta")
+        headers.Add("total_carton")
+        headers.Add("total_quantity")
+        headers.Add("hannyusaki_name")
+        headers.Add("hannyusaki_address")
+        headers.Add("hannyusaki_phone_no")
+        headers.Add("hannyusaki_tanto")
+        headers.Add("tantosha")
+        Return headers
+    End Function
 #End Region
 
 #Region "内部処理"
@@ -160,16 +230,117 @@ Public Class HaisoTehaiReportWriter
         Dim controlLines As New List(Of String)()
         controlLines.Add(SvfDataFileWriter.CreateQuotedControlLine("VrSetOutputPrinter", settings.OutputPrinter))
         controlLines.Add(SvfDataFileWriter.CreateControlLine("VrSetUseReportDirector", "1"))
-        controlLines.Add(SvfDataFileWriter.CreateQuotedControlLine("VrSetDocName2", DocumentName))
+        ' ドキュメント名は様式ごとに変えます。SVF 側のログで何を出したか分かるようにするためです。
+        controlLines.Add(SvfDataFileWriter.CreateQuotedControlLine("VrSetDocName2", form.DisplayName))
+
+        ' AIR と定期便では列が違うため、見出しと値の作り方を切り替えます
+        Dim headers As IList(Of String) = If(form.IsAir, CreateAirHeaders(), CreateHeaders())
 
         Dim dataRows As New List(Of IList(Of String))()
         For Each row As ShanghaiHaisoTehaiReportRow In rows
+            ' AIR のとき
+            If form.IsAir Then
+                dataRows.Add(Me.CreateAirDataRow(form, row, loginCode, hakkoYmd))
+                Continue For
+            End If
             dataRows.Add(Me.CreateDataRow(form, row, loginCode, hakkoYmd))
         Next
 
         Dim fileName As String = Me.CreateFileName(form, rows(0), hakkoYmd)
         Return Me._writer.Write(settings.WatchFolderPath, fileName, controlLines,
-                                CreateHeaders(), dataRows, loginCode)
+                                headers, dataRows, loginCode)
+    End Function
+
+    ''' <summary>
+    ''' AIR のデータ行 1 行分を組み立てます。
+    ''' </summary>
+    ''' <param name="form">様式。</param>
+    ''' <param name="row">帳票の行。</param>
+    ''' <param name="loginCode">利用者のログインコード。</param>
+    ''' <param name="hakkoYmd">発行日。</param>
+    ''' <returns>18 列の値。見出しと同じ並びです。</returns>
+    ''' <remarks>
+    ''' 旧 Access のレポート `R_上海輸入_配送手配_AIR` に合わせています（設計書 §14.1.1.1）。
+    ''' 日付は定期便と書式が違い、電話と FAX は別の行のため列を分けています。
+    ''' </remarks>
+    Private Function CreateAirDataRow(form As HaisoTehaiForm,
+                                      row As ShanghaiHaisoTehaiReportRow,
+                                      loginCode As String,
+                                      hakkoYmd As Date) As IList(Of String)
+
+        Dim values As New List(Of String)()
+        values.Add(form.ReportKubun)
+        values.Add(loginCode)
+        values.Add(hakkoYmd.ToString(HakkoYmdFormat, _japaneseCulture))
+        values.Add(Me.CreateAtesaki(row))
+        values.Add(PhoneLabel & row.PhoneNo)
+        values.Add(FaxLabel & row.FaxNo)
+        values.Add(row.InvoiceNo)
+        values.Add(row.Vessel)
+        values.Add(Etd)
+        values.Add(FormatDate(row.BlDate, HakkoYmdFormat))
+        values.Add(Me.CreateEta(row))
+        values.Add(FormatNumber(row.TotalCarton))
+        values.Add(FormatNumber(row.TotalQuantity))
+        values.Add(row.HaisoSaki1.Name)
+        values.Add(row.HaisoSaki1.Address)
+        values.Add(row.HaisoSaki1.PhoneNo)
+        values.Add(row.HaisoSaki1.Tanto)
+        values.Add(Me.CreateTantosha(row))
+        Return values
+    End Function
+
+    ''' <summary>
+    ''' 日新入荷の明細だけを取り出します。
+    ''' </summary>
+    ''' <param name="rows">帳票の行。</param>
+    ''' <returns>配送タイプが日新の行。</returns>
+    ''' <remarks>
+    ''' 設計書 §10.5。**配送手配書とは別に、同じ明細をもう一度出します。**
+    ''' 日新の行は定期便としても出力されるため、ここでは取り除かずに拾うだけです。
+    ''' </remarks>
+    Private Function CollectNisshinRows(rows As IList(Of ShanghaiHaisoTehaiReportRow)) As IList(Of ShanghaiHaisoTehaiReportRow)
+        Dim results As New List(Of ShanghaiHaisoTehaiReportRow)()
+        For Each row As ShanghaiHaisoTehaiReportRow In rows
+            ' 配送タイプが日新でないとき
+            If Not row.HaisoType.HasValue OrElse row.HaisoType.Value <> NisshinHaisoType Then
+                Continue For
+            End If
+            results.Add(row)
+        Next
+        Return results
+    End Function
+
+    ''' <summary>
+    ''' 日新入荷の宛名を組み立てます。
+    ''' </summary>
+    ''' <param name="row">帳票の行。</param>
+    ''' <returns>配送先名と担当者を全角空白でつないだ文字列。</returns>
+    ''' <remarks>
+    ''' **定期便と違い、宛先は乙仲ではなく配送先です**（設計書 §14.1.1.2）。
+    ''' 旧 Access のレポートが次の式でした。
+    ''' <code>=[haiso_saki1_name] &amp; "　" &amp; [haiso_saki1_tanto1]</code>
+    ''' </remarks>
+    Private Function CreateNisshinAtesaki(row As ShanghaiHaisoTehaiReportRow) As String
+        Return JoinNonEmpty(WideSpace, row.HaisoSaki1.Name, row.HaisoSaki1.Tanto)
+    End Function
+
+    ''' <summary>
+    ''' AIR の ETA（到着地）を求めます。
+    ''' </summary>
+    ''' <param name="row">帳票の行。</param>
+    ''' <returns>到着地の文字列。</returns>
+    ''' <remarks>
+    ''' 旧 Access のレポートに次の式が書かれていました。
+    ''' <code>=IIf([haiso_saki1]=31,"OSAKA, JAPAN","TOKYO, JAPAN")</code>
+    ''' `31` はセンコー（設計書 §10.7）。**様式に条件式を持たせず、ここで決めます。**
+    ''' </remarks>
+    Private Function CreateEta(row As ShanghaiHaisoTehaiReportRow) As String
+        ' 配送先がセンコーのとき
+        If row.HaisoSaki1No.HasValue AndAlso row.HaisoSaki1No.Value = OsakaHaisoSaki Then
+            Return EtaOsaka
+        End If
+        Return EtaTokyo
     End Function
 
     ''' <summary>
@@ -189,7 +360,7 @@ Public Class HaisoTehaiReportWriter
         values.Add(form.ReportKubun)
         values.Add(loginCode)
         values.Add(hakkoYmd.ToString(HakkoYmdFormat, _japaneseCulture))
-        values.Add(Me.CreateAtesaki(row))
+        values.Add(If(form.IsNisshin, Me.CreateNisshinAtesaki(row), Me.CreateAtesaki(row)))
         values.Add(Me.CreatePhoneFax(row))
         values.Add(row.RefNo)
         values.Add(row.InvoiceNo)
@@ -239,7 +410,7 @@ Public Class HaisoTehaiReportWriter
     ''' <returns>ラベルを含む文字列。</returns>
     ''' <remarks>ラベルも帳票の枠ではなくこちらに含めます（設計書 §14.1.1）。</remarks>
     Private Function CreatePhoneFax(row As ShanghaiHaisoTehaiReportRow) As String
-        Return "PHONE: " & row.PhoneNo & " FAX : " & row.FaxNo
+        Return PhoneLabel & row.PhoneNo & " " & FaxLabel & row.FaxNo
     End Function
 
     ''' <summary>

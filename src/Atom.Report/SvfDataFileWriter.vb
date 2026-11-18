@@ -79,6 +79,77 @@ Public Class SvfDataFileWriter
         Me.Validate(watchFolderPath, fileName, headers, rows)
 
         Dim content As String = Me.BuildContent(controlLines, headers, rows)
+        Return Me.Place(watchFolderPath, fileName, content, loginCode)
+    End Function
+
+    ''' <summary>
+    ''' ヘッダー明細別レコード形式の連携ファイルを生成し、監視フォルダへ配置します。
+    ''' </summary>
+    ''' <param name="watchFolderPath">SVF の監視フォルダのパス。</param>
+    ''' <param name="fileName">配置するファイル名。拡張子を含めます。</param>
+    ''' <param name="controlLines">制御部に書く行。「名前=値」の形で渡します。</param>
+    ''' <param name="headers">見出し行の項目名。区分列・ヘッダー項目・明細項目をこの順に並べます。</param>
+    ''' <param name="headerItemCount">見出しのうち、区分列の次から数えたヘッダー項目の個数。</param>
+    ''' <param name="groups">ヘッダー 1 件と、それにぶら下がる明細の組。</param>
+    ''' <param name="loginCode">操作している利用者のログインコード。ログに記録します。</param>
+    ''' <returns>配置したファイルのフルパス。</returns>
+    ''' <remarks>
+    ''' 明細が繰り返す帳票（入荷明細書）で使います。通常の形と違い、**行ごとに列数が変わります。**
+    ''' ヘッダー行は「区分列 ＋ ヘッダー項目」、明細行は「明細項目だけ」です
+    ''' （設計書 §14.1.1.3 / §18 C-53）。
+    '''
+    ''' 列数が一定でないぶん、ずれても SVF 側では気付けません。
+    ''' そのため、ここで行の種類ごとにあるべき列数を数えて確かめます。
+    ''' </remarks>
+    Public Function WriteHeaderDetail(watchFolderPath As String,
+                                      fileName As String,
+                                      controlLines As IList(Of String),
+                                      headers As IList(Of String),
+                                      headerItemCount As Integer,
+                                      groups As IList(Of SvfHeaderDetailGroup),
+                                      loginCode As String) As String
+
+        Me.ValidateHeaderDetail(watchFolderPath, fileName, headers, headerItemCount, groups)
+
+        Dim content As String = Me.BuildHeaderDetailContent(controlLines, headers, groups)
+        Return Me.Place(watchFolderPath, fileName, content, loginCode)
+    End Function
+
+    ''' <summary>
+    ''' 制御部の 1 行を組み立てます。値をダブルクォートで囲みます。
+    ''' </summary>
+    ''' <param name="name">SVF の API 関数名。</param>
+    ''' <param name="value">設定する値。</param>
+    ''' <returns>「名前="値"」の形の文字列。</returns>
+    Public Shared Function CreateQuotedControlLine(name As String, value As String) As String
+        Return name & "=""" & NormalizeValue(value) & """"
+    End Function
+
+    ''' <summary>
+    ''' 制御部の 1 行を組み立てます。値をそのまま書きます。数値の指定に使います。
+    ''' </summary>
+    ''' <param name="name">SVF の API 関数名。</param>
+    ''' <param name="value">設定する値。</param>
+    ''' <returns>「名前=値」の形の文字列。</returns>
+    Public Shared Function CreateControlLine(name As String, value As String) As String
+        Return name & "=" & NormalizeValue(value)
+    End Function
+#End Region
+
+#Region "内部処理"
+    ''' <summary>
+    ''' 組み立てた中身を監視フォルダへ配置します。
+    ''' </summary>
+    ''' <param name="watchFolderPath">監視フォルダのパス。</param>
+    ''' <param name="fileName">ファイル名。</param>
+    ''' <param name="content">ファイルに書き込む文字列。</param>
+    ''' <param name="loginCode">操作している利用者のログインコード。</param>
+    ''' <returns>配置したファイルのフルパス。</returns>
+    Private Function Place(watchFolderPath As String,
+                           fileName As String,
+                           content As String,
+                           loginCode As String) As String
+
         Dim finalPath As String = Path.Combine(watchFolderPath, fileName)
         Dim writingPath As String = finalPath & WritingExtension
 
@@ -108,28 +179,6 @@ Public Class SvfDataFileWriter
         Return finalPath
     End Function
 
-    ''' <summary>
-    ''' 制御部の 1 行を組み立てます。値をダブルクォートで囲みます。
-    ''' </summary>
-    ''' <param name="name">SVF の API 関数名。</param>
-    ''' <param name="value">設定する値。</param>
-    ''' <returns>「名前="値"」の形の文字列。</returns>
-    Public Shared Function CreateQuotedControlLine(name As String, value As String) As String
-        Return name & "=""" & NormalizeValue(value) & """"
-    End Function
-
-    ''' <summary>
-    ''' 制御部の 1 行を組み立てます。値をそのまま書きます。数値の指定に使います。
-    ''' </summary>
-    ''' <param name="name">SVF の API 関数名。</param>
-    ''' <param name="value">設定する値。</param>
-    ''' <returns>「名前=値」の形の文字列。</returns>
-    Public Shared Function CreateControlLine(name As String, value As String) As String
-        Return name & "=" & NormalizeValue(value)
-    End Function
-#End Region
-
-#Region "内部処理"
     ''' <summary>
     ''' 連携ファイルの文字コードを作ります。
     ''' </summary>
@@ -187,6 +236,110 @@ Public Class SvfDataFileWriter
             End If
         Next
     End Sub
+
+    ''' <summary>
+    ''' ヘッダー明細別レコード形式の引数の内容を確かめます。
+    ''' </summary>
+    ''' <param name="watchFolderPath">監視フォルダのパス。</param>
+    ''' <param name="fileName">ファイル名。</param>
+    ''' <param name="headers">見出し行。</param>
+    ''' <param name="headerItemCount">ヘッダー項目の個数。</param>
+    ''' <param name="groups">ヘッダーと明細の組。</param>
+    Private Sub ValidateHeaderDetail(watchFolderPath As String,
+                                     fileName As String,
+                                     headers As IList(Of String),
+                                     headerItemCount As Integer,
+                                     groups As IList(Of SvfHeaderDetailGroup))
+
+        If String.IsNullOrWhiteSpace(watchFolderPath) Then
+            Throw New ArgumentException("監視フォルダのパスが設定されていません。", NameOf(watchFolderPath))
+        End If
+
+        If String.IsNullOrWhiteSpace(fileName) Then
+            Throw New ArgumentException("ファイル名が指定されていません。", NameOf(fileName))
+        End If
+
+        If headers Is Nothing OrElse headers.Count = 0 Then
+            Throw New ArgumentException("見出し行が指定されていません。", NameOf(headers))
+        End If
+
+        ' 区分列 1 つとヘッダー項目を除いた残りが明細項目になるため、
+        ' 明細項目が 1 つも残らない指定は誤りとして止める
+        If headerItemCount < 0 OrElse headerItemCount >= headers.Count - 1 Then
+            Throw New ArgumentOutOfRangeException(NameOf(headerItemCount),
+                "ヘッダー項目の個数が見出しの列数と釣り合いません。" &
+                "見出しは " & headers.Count.ToString() & " 列、指定は " & headerItemCount.ToString() & " 個です。")
+        End If
+
+        If groups Is Nothing Then
+            Throw New ArgumentNullException(NameOf(groups))
+        End If
+
+        Dim headerLineCount As Integer = headerItemCount + 1
+        Dim detailLineCount As Integer = headers.Count - headerLineCount
+
+        Dim groupNo As Integer = 0
+        For Each group As SvfHeaderDetailGroup In groups
+            groupNo += 1
+
+            If group Is Nothing OrElse group.HeaderValues Is Nothing OrElse
+               group.HeaderValues.Count <> headerLineCount Then
+                Dim actual As String = If(group Is Nothing OrElse group.HeaderValues Is Nothing,
+                                          "0", group.HeaderValues.Count.ToString())
+                Throw New ArgumentException(
+                    "ヘッダー行の列数が合いません。" &
+                    groupNo.ToString() & " 組目は " & actual & " 列、あるべきは " & headerLineCount.ToString() & " 列です。",
+                    NameOf(groups))
+            End If
+
+            Dim rowNo As Integer = 0
+            For Each detail As IList(Of String) In group.DetailRows
+                rowNo += 1
+                If detail Is Nothing OrElse detail.Count <> detailLineCount Then
+                    Dim actual As String = If(detail Is Nothing, "0", detail.Count.ToString())
+                    Throw New ArgumentException(
+                        "明細行の列数が合いません。" &
+                        groupNo.ToString() & " 組目の " & rowNo.ToString() & " 行目は " & actual &
+                        " 列、あるべきは " & detailLineCount.ToString() & " 列です。",
+                        NameOf(groups))
+                End If
+            Next
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' ヘッダー明細別レコード形式の中身を組み立てます。
+    ''' </summary>
+    ''' <param name="controlLines">制御部に書く行。</param>
+    ''' <param name="headers">見出し行。</param>
+    ''' <param name="groups">ヘッダーと明細の組。</param>
+    ''' <returns>ファイルに書き込む文字列。</returns>
+    Private Function BuildHeaderDetailContent(controlLines As IList(Of String),
+                                              headers As IList(Of String),
+                                              groups As IList(Of SvfHeaderDetailGroup)) As String
+
+        Dim builder As New StringBuilder()
+
+        builder.Append(ControlStartLine).Append(vbCrLf)
+        ' 制御部の指定があるとき
+        If controlLines IsNot Nothing Then
+            For Each line As String In controlLines
+                builder.Append(NormalizeValue(line)).Append(vbCrLf)
+            Next
+        End If
+        builder.Append(ControlEndLine).Append(vbCrLf)
+
+        builder.Append(Me.BuildLine(headers)).Append(vbCrLf)
+
+        For Each group As SvfHeaderDetailGroup In groups
+            builder.Append(Me.BuildLine(group.HeaderValues)).Append(vbCrLf)
+            For Each detail As IList(Of String) In group.DetailRows
+                builder.Append(Me.BuildLine(detail)).Append(vbCrLf)
+            Next
+        Next
+
+        Return builder.ToString()
+    End Function
 
     ''' <summary>
     ''' 連携ファイルの中身を組み立てます。
@@ -274,5 +427,23 @@ Public Class SvfDataFileWriter
         End Try
     End Sub
 #End Region
+
+End Class
+
+''' <summary>
+''' ヘッダー明細別レコード形式の、ヘッダー 1 件とその明細の組です。
+''' </summary>
+''' <remarks>
+''' ヘッダー行は区分列から始まり、明細行は明細項目だけを並べます。
+''' 列数が行の種類で変わるため、どの明細がどのヘッダーに属するかを
+''' ファイルの並び順ではなくこの組で表します（設計書 §14.1.1.3）。
+''' </remarks>
+Public Class SvfHeaderDetailGroup
+
+    ''' <summary>ヘッダー行の値。先頭は区分列です。</summary>
+    Public ReadOnly Property HeaderValues As IList(Of String) = New List(Of String)()
+
+    ''' <summary>そのヘッダーにぶら下がる明細行。</summary>
+    Public ReadOnly Property DetailRows As IList(Of IList(Of String)) = New List(Of IList(Of String))()
 
 End Class

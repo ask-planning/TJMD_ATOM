@@ -144,10 +144,14 @@ Namespace Pages.Report
         ''' <remarks>
         ''' 配送先の箇所数によって様式が分かれるため、**1 回の出力で 2 つ以上できることがあります。**
         ''' 1 つだけならそのまま開き、複数あるときは選べるようにリンクを並べます。
+        '''
+        ''' **探すのは配送手配書だけです。**入荷明細書は別のボタンから出す帳票で、
+        ''' 呼び出し側が帳票区分を付けて開きます。ここに混ぜると、
+        ''' 配送手配書の「表示」を押したのに入荷明細書が開くことがあります。
         ''' </remarks>
         Private Sub ShowAvailable(pdfFolderPath As String, loginCode As String)
             Dim available As New List(Of HaisoTehaiForm)()
-            For Each form As HaisoTehaiForm In HaisoTehaiForm.All()
+            For Each form As HaisoTehaiForm In HaisoTehaiForm.HaisoTehaiAll()
                 ' 出力されていないとき
                 If Not Me._pdfStore.Exists(pdfFolderPath, form.ReportKubun, loginCode) Then
                     Continue For

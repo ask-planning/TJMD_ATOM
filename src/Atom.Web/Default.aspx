@@ -6,49 +6,57 @@
          色は site.css の共通変数を参照し、この画面で HEX 値を直接書かないようにします。 --%>
     <style type="text/css">
         /* 3 列に並べます。どのブロックをどの列へ置くかは画面定義の Column で決めます。
-           列ごとに独立して積み上げるため、隣の列の高さに引きずられた余白ができません。 */
+           列ごとに独立して積み上げるため、隣の列の高さに引きずられた余白ができません。
+           列は幅が固定のため、放っておくと左へ寄ります。大きなモニターでも
+           真ん中に見えるよう、列ごと中央へ寄せます。 */
         .atom-menu {
             display: flex;
             flex-wrap: wrap;
             align-items: flex-start;
-            gap: 16px;
+            justify-content: center;
+            gap: 18px;
         }
 
         .atom-column {
             display: flex;
             flex: 0 0 auto;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
             width: var(--atom-block-width);
         }
 
+        /* ブロックは白いカード。枠線ではなく淡い影で区切ります。 */
         .atom-block {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0;
             width: 100%;
-            padding: 8px;
-            border: 1px solid var(--atom-menu-border);
+            padding: 16px 12px 14px;
+            border: 0;
+            border-radius: var(--atom-radius-l);
+            background-color: var(--atom-surface);
+            box-shadow: var(--atom-shadow);
         }
 
-        .atom-block-blue {
-            background-color: var(--atom-menu-blue-bg);
+        /* 見出しの色だけで系統を分けます。面は白のまま揃えます。 */
+        .atom-block-blue .atom-block-title {
+            color: var(--atom-accent);
         }
 
-        .atom-block-pink {
-            background-color: var(--atom-menu-pink-bg);
+        .atom-block-pink .atom-block-title {
+            color: var(--atom-menu-pink-text);
         }
 
         .atom-block-title {
-            margin: 0;
-            padding: 6px 4px;
+            margin: 0 0 12px;
+            padding: 0 6px;
             overflow: hidden;
-            border: 1px solid var(--atom-menu-border);
-            background-color: var(--atom-menu-pink-bg);
-            color: var(--atom-menu-blue-text);
+            border: 0;
+            background-color: transparent;
             font-size: 13px;
             font-weight: bold;
-            text-align: center;
+            text-align: left;
+            text-overflow: ellipsis;
             /* 「上海輸入定期便＆AIR便」のような長い見出しが途中で折り返さないようにする */
             white-space: nowrap;
         }
@@ -65,30 +73,56 @@
         .atom-menu-button {
             display: block;
             width: 100%;
-            padding: 8px 4px;
-            border: 1px solid var(--atom-button-border);
-            background-color: var(--atom-menu-button-bg);
-            color: var(--atom-menu-blue-text);
+            padding: 11px 14px;
+            border: 0;
+            border-radius: var(--atom-radius);
+            background-color: var(--atom-surface-soft);
+            color: var(--atom-text);
             cursor: pointer;
-            font-size: 14px;
-            text-align: center;
+            font-family: inherit;
+            font-size: 13px;
+            text-align: left;
             text-decoration: none;
         }
 
         .atom-menu-button:hover {
-            filter: brightness(0.95);
+            background-color: var(--atom-accent-weak);
+            color: var(--atom-accent);
+            filter: none;
+            text-decoration: none;
         }
 
+        /* 未実装の画面。押す前に分かるよう薄くします。
+           押すこと自体は今までどおりできます（押すと「現在未実装です。」が出ます）。 */
+        .atom-menu-button-pending {
+            background-color: #FBFCFD;
+            color: var(--atom-disabled-text);
+        }
+
+        .atom-menu-button-pending:hover {
+            background-color: var(--atom-surface-soft);
+            color: var(--atom-text-muted);
+        }
+
+        /* 権限が無い画面。こちらは押せません。 */
         .atom-menu-button.aspNetDisabled {
+            background-color: #FBFCFD;
             color: var(--atom-disabled-text);
             cursor: default;
         }
 
+        .atom-menu-button.aspNetDisabled:hover {
+            background-color: #FBFCFD;
+            color: var(--atom-disabled-text);
+        }
+
         .atom-menu-status {
             display: block;
+            margin-top: 3px;
+            padding: 0 14px;
             color: var(--atom-disabled-text);
-            font-size: 12px;
-            text-align: center;
+            font-size: 11.5px;
+            text-align: left;
         }
 
         /* ログアウトは 3 列目（輸入経費入力の下）に置きます */
@@ -98,17 +132,22 @@
 
         .atom-logout-button {
             width: 100%;
-            padding: 12px 4px;
-            border: 1px solid var(--atom-button-border);
-            background-color: var(--atom-menu-button-bg);
-            color: var(--atom-text);
+            padding: 12px 14px;
+            border: 1px solid var(--atom-line-strong);
+            border-radius: var(--atom-radius);
+            background-color: var(--atom-surface);
+            color: #344054;
             cursor: pointer;
-            font-size: 16px;
+            font-family: inherit;
+            font-size: 13px;
             text-align: center;
         }
 
         .atom-logout-button:hover {
-            filter: brightness(0.95);
+            border-color: var(--atom-accent);
+            background-color: var(--atom-accent-weak);
+            color: var(--atom-accent);
+            filter: none;
         }
     </style>
 </asp:Content>
@@ -127,7 +166,7 @@
                                 <ItemTemplate>
                                     <li>
                                         <asp:LinkButton ID="lnkScreen" runat="server"
-                                            CssClass="atom-menu-button"
+                                            CssClass='<%# Server.HtmlEncode(CStr(Eval("MenuButtonCssClass"))) %>'
                                             CausesValidation="false"
                                             CommandName="Open"
                                             CommandArgument='<%# CStr(Eval("MenuNo")) %>'
@@ -156,7 +195,7 @@
                                 <ItemTemplate>
                                     <li>
                                         <asp:LinkButton ID="lnkScreen" runat="server"
-                                            CssClass="atom-menu-button"
+                                            CssClass='<%# Server.HtmlEncode(CStr(Eval("MenuButtonCssClass"))) %>'
                                             CausesValidation="false"
                                             CommandName="Open"
                                             CommandArgument='<%# CStr(Eval("MenuNo")) %>'
@@ -185,7 +224,7 @@
                                 <ItemTemplate>
                                     <li>
                                         <asp:LinkButton ID="lnkScreen" runat="server"
-                                            CssClass="atom-menu-button"
+                                            CssClass='<%# Server.HtmlEncode(CStr(Eval("MenuButtonCssClass"))) %>'
                                             CausesValidation="false"
                                             CommandName="Open"
                                             CommandArgument='<%# CStr(Eval("MenuNo")) %>'

@@ -1,0 +1,10 @@
+<start>
+VrSetOutputPrinter="HONKAN_PRNT01"
+VrSetUseReportDirector=1
+VrSetDocName2="入荷明細書（テスト）"
+<end>
+header	帳票区分	login_code	title	hakko_ymd	invoice_no_main	invoice_no	total_carton_d	bl_date	container_type_label	invoice_no_print	container_no	seal_no	haiso_yotei_ymd	remarks	hokan_basyo_text	zaiko_tenso_no	syukka_denpyo_no	nukitori_mark	R3_hinmoku_code	carton_no_from	carton_no_to	nukitori_hakosu	carton_qty	nounyu_suryo	irisu
+header	NYUKA	999999	上海タジマ入荷明細	2026年1月1日	TEST-TR0001
+TEST-TR0001BC	10	2026/01/01	20Ftコンテナ	BC,BR	TESTCNTR0001	TESTSEAL01	2026/01/11		テスト保管場所1	4500000001	0030000001		10001	1	1		1	480	480
+TEST-TR0001BC		2026/01/01	20Ftコンテナ	BC,BR	TESTCNTR0001	TESTSEAL01	2026/01/11					※	10002	2	5	4	4	480	120
+TEST-TR0001BC		2026/01/01	20Ftコンテナ	BC,BR	TESTCNTR0001	TESTSEAL01	2026/01/11			4500000002	0030000002		10003	6	10		5	2400	480

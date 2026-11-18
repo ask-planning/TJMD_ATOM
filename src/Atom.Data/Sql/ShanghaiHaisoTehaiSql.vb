@@ -86,7 +86,7 @@ Namespace Sql
         ''' </remarks>
         Public Shared Function CreateSelectReportRowsSql() As String
             Return "SELECT ref_no, invoice_no, vessel, bl_date, haiso_type, " &
-                   "container_type, container_no, seal_no, total_carton, haisyo_yotei_ymd, " &
+                   "container_type, container_no, seal_no, total_carton, total_quantity, haisyo_yotei_ymd, " &
                    "otsunaka_no_text, otsunaka_tanto1, otsunaka_tanto2, " &
                    "haiso_saki1, haiso_saki2, haiso_saki3, " &
                    "haiso_saki1_name, haiso_saki1_address, haiso_saki1_phone_no, haiso_saki1_tanto1, " &

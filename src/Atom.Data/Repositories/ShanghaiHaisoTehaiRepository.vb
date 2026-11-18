@@ -193,6 +193,7 @@ Namespace Repositories
             row.ContainerNo = ReadString(reader, "container_no")
             row.SealNo = ReadString(reader, "seal_no")
             row.TotalCarton = ReadNullableInteger(reader, "total_carton")
+            row.TotalQuantity = ReadNullableInteger(reader, "total_quantity")
             row.HaisoYoteiYmd = ReadNullableDate(reader, "haisyo_yotei_ymd")
             row.OtsunakaNoText = ReadString(reader, "otsunaka_no_text")
             row.OtsunakaTanto1 = ReadString(reader, "otsunaka_tanto1")

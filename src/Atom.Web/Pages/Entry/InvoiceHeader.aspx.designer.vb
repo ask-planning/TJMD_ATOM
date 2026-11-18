@@ -90,6 +90,10 @@ Namespace Pages.Entry
         '''<remarks>自動生成されたフィールド。</remarks>
         Protected WithEvents btnRegister As Global.System.Web.UI.WebControls.Button
 
+        '''<summary>upnReport コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents upnReport As Global.System.Web.UI.UpdatePanel
+
         '''<summary>btnHaisoTehai コントロール。</summary>
         '''<remarks>自動生成されたフィールド。</remarks>
         Protected WithEvents btnHaisoTehai As Global.System.Web.UI.WebControls.Button
@@ -102,9 +106,37 @@ Namespace Pages.Entry
         '''<remarks>自動生成されたフィールド。</remarks>
         Protected WithEvents btnNyukaMeisai As Global.System.Web.UI.WebControls.Button
 
-        '''<summary>btnNyukaMeisaiView コントロール。</summary>
-        '''<remarks>自動生成されたフィールド。</remarks>
-        Protected WithEvents btnNyukaMeisaiView As Global.System.Web.UI.WebControls.Button
+        '''<summary>lnkNyukaMeisaiView コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents lnkNyukaMeisaiView As Global.System.Web.UI.WebControls.HyperLink
+
+        '''<summary>pnlNyukaConfirm コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents pnlNyukaConfirm As Global.System.Web.UI.WebControls.Panel
+
+        '''<summary>litNyukaConfirmMessage コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents litNyukaConfirmMessage As Global.System.Web.UI.WebControls.Literal
+
+        '''<summary>btnNyukaRecreate コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents btnNyukaRecreate As Global.System.Web.UI.WebControls.Button
+
+        '''<summary>btnNyukaGoConfirm コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents btnNyukaGoConfirm As Global.System.Web.UI.WebControls.Button
+
+        '''<summary>btnNyukaPrint コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents btnNyukaPrint As Global.System.Web.UI.WebControls.Button
+
+        '''<summary>btnNyukaCreateYes コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents btnNyukaCreateYes As Global.System.Web.UI.WebControls.Button
+
+        '''<summary>btnNyukaCancel コントロール。</summary>
+        '''<remarks>自動生成されたフィールド。手動で変更しないでください。</remarks>
+        Protected WithEvents btnNyukaCancel As Global.System.Web.UI.WebControls.Button
 
         '''<summary>btnMeisaiUpdate コントロール。</summary>
         '''<remarks>自動生成されたフィールド。</remarks>

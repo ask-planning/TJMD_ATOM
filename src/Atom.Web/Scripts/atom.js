@@ -99,10 +99,44 @@ var AtomPage = (function () {
             return true;
         },
 
+        // 処理中の表示を解除し、ボタンを押せる状態へ戻します。
+        // ページ全体を読み直すときは不要ですが、UpdatePanel で一部だけ差し替えると
+        // 囲みの外のボタンが無効のまま残るため、通信の終わりに呼びます。
+        endProcessing: function () {
+            var panel = document.querySelector(".atom-processing");
+            if (panel) {
+                panel.style.display = "none";
+            }
+            var buttons = document.querySelectorAll(".atom-action-button");
+            for (var i = 0; i < buttons.length; i++) {
+                // リンク（a 要素）のとき
+                if (buttons[i].tagName === "A") {
+                    buttons[i].className =
+                        buttons[i].className.replace(" atom-action-disabled", "");
+                    buttons[i].removeAttribute("aria-disabled");
+                // ボタンのとき
+                } else {
+                    buttons[i].disabled = false;
+                }
+            }
+        },
+
         init: function () {
             watchInput();
+            watchPartialPostback();
         }
     };
+
+    // UpdatePanel の通信が終わったら、処理中の表示を戻します。
+    // ScriptManager が無いページでは Sys が未定義のため、存在を確かめてから登録します。
+    function watchPartialPostback() {
+        if (typeof Sys === "undefined" || !Sys.WebForms || !Sys.WebForms.PageRequestManager) {
+            return;
+        }
+        Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+            AtomPage.endProcessing();
+        });
+    }
 })();
 
 if (document.readyState === "loading") {

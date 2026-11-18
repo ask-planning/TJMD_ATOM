@@ -92,4 +92,13 @@ Partial Public Class HeaderControl
     '''変更するには、フィールドの宣言をデザイナー ファイルから分離コード ファイルに移動します。
     '''</remarks>
     Protected WithEvents litLoginName As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''lblLoginInitial コントロール。
+    '''</summary>
+    '''<remarks>
+    '''自動生成されたフィールド。
+    '''手動で変更しないでください。
+    '''</remarks>
+    Protected WithEvents lblLoginInitial As Global.System.Web.UI.WebControls.Label
 End Class

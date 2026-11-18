@@ -1,0 +1,7 @@
+<start>
+VrSetOutputPrinter="HONKAN_PRNT01"
+VrSetUseReportDirector=1
+VrSetDocName2="日新入荷（テスト）"
+<end>
+帳票区分	login_code	hakko_ymd	atesaki	phone_fax	ref_no	invoice_no	vessel	bl_date	container_type	container_no	seal_no	total_carton	haiso_yotei	haiso_saki1_name	haiso_saki1_address	haiso_saki1_phone_no	haiso_saki1_tanto	haiso_saki2_name	haiso_saki2_address	haiso_saki2_phone_no	haiso_saki2_tanto	haiso_saki3_name	haiso_saki3_address	haiso_saki3_phone_no	haiso_saki3_tanto	tantosha
+NISSHIN	999999	2026年1月1日	テスト配送先1　テスト担当1	PHONE: 00(0000)0000 FAX : 00(0000)0000	TEST-0007	TEST-INV-0007	TEST VESSEL	2026/01/01	20Ft	TESTCNTR0007	TESTSEAL07	999	1/1(木)													テスト部門　テスト 太郎

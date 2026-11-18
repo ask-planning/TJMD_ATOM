@@ -49,6 +49,9 @@
 
     <div class="atom-header-user">
         <asp:Panel ID="pnlUser" runat="server" CssClass="atom-header-user-box" Visible="false">
+            <%-- 氏名の頭 1 文字です。誰で入っているかが目に留まりやすくなります。
+                 値はコードビハインドで入れます（氏名が空のときは出しません）。 --%>
+            <asp:Label ID="lblLoginInitial" runat="server" CssClass="atom-header-user-initial" Visible="false" />
             <asp:Literal ID="litLoginName" runat="server" Mode="Encode" />
         </asp:Panel>
     </div>

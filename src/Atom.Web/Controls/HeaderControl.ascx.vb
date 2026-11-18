@@ -51,20 +51,25 @@ Public Class HeaderControl
 
         Dim catalog As ScreenCatalog = ScreenCatalog.Current
 
-        ' メニュー画面・ログイン画面のとき（ATOM のタイトルを表示する）
+        ' システム名はどの画面でも出します。業務画面では続けて画面名を並べます。
+        Me.pnlLogo.Visible = True
+
+        ' メニュー画面・ログイン画面のとき（システム名だけ）
         If menuNo = MenuScreenNo Then
-            Me.pnlLogo.Visible = True
             Me.pnlScreenTitle.Visible = False
-        ' 業務画面のとき（画面名を表示する）
+        ' 業務画面のとき（画面名も出す）
         Else
-            Me.pnlLogo.Visible = False
             Me.pnlScreenTitle.Visible = True
             Me.litScreenTitle.Text = catalog.GetTitle(menuNo)
         End If
 
-        ' 画面ごとの背景色は外部定義で切り替えるため、CSS クラスではなく直接指定します。
+        ' 画面ごとの色は外部定義で切り替えるため、CSS クラスではなく直接指定します。
         ' 外部ファイルの値をそのまま style 属性へ出さないよう、色の書式を検証します。
-        Me.divHeader.Style("background-color") = Me.ToSafeColor(catalog.GetHeaderBackColor(menuNo))
+        '
+        ' **帯を塗るのではなく、下の線だけに色を付けます。**
+        ' ヘッダーは白地にしたため、面を塗ると画面ごとに印象が変わりすぎるためです。
+        ' 画面を見分ける手がかりとしては線で足ります。
+        Me.divHeader.Style("border-bottom-color") = Me.ToSafeColor(catalog.GetHeaderBackColor(menuNo))
 
         ' 画面固有ボタンは画面ごとに件数が変わるためデータバインドで描画します。
         Dim actions As IList(Of HeaderAction) = New List(Of HeaderAction)()
@@ -77,6 +82,26 @@ Public Class HeaderControl
         Dim session As SessionContext = SessionContext.Current
         Me.pnlUser.Visible = session.IsLoggedIn()
         Me.litLoginName.Text = session.LoginName
+        Me.ShowLoginInitial(session.LoginName)
+    End Sub
+
+    ''' <summary>
+    ''' 利用者名の頭 1 文字を表示します。
+    ''' </summary>
+    ''' <param name="loginName">利用者名。</param>
+    ''' <remarks>
+    ''' 誰で入っているかが目に留まりやすいよう、名前の前に丸い印として出します。
+    ''' 名前が空のときは印も出しません。
+    ''' </remarks>
+    Private Sub ShowLoginInitial(loginName As String)
+        ' 名前が無いとき
+        If String.IsNullOrWhiteSpace(loginName) Then
+            Me.lblLoginInitial.Visible = False
+            Return
+        End If
+
+        Me.lblLoginInitial.Text = loginName.Trim().Substring(0, 1)
+        Me.lblLoginInitial.Visible = True
     End Sub
 #End Region
 
