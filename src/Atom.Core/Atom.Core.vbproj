@@ -70,6 +70,7 @@
     <Compile Include="Entities\DenpyoKubun.vb" />
     <Compile Include="Entities\ExpenseCode.vb" />
     <Compile Include="Entities\ImportCheckResult.vb" />
+    <Compile Include="Entities\ImportProgressSyori.vb" />
     <Compile Include="Entities\Koumoku.vb" />
     <Compile Include="Entities\LoginUser.vb" />
     <Compile Include="Entities\ShanghaiNyukaMeisai.vb" />

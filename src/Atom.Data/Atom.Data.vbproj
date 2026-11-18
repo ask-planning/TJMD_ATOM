@@ -62,6 +62,7 @@
     <Compile Include="Services\ShanghaiImportService.vb" />
     <Compile Include="Services\ShanghaiInvoiceHeaderService.vb" />
     <Compile Include="Services\ShanghaiHaisoTehaiService.vb" />
+    <Compile Include="Services\ImportProgressService.vb" />
     <Compile Include="Services\ShanghaiNyukaMeisaiService.vb" />
     <Compile Include="Sql\ExpenseCodeSql.vb" />
     <Compile Include="Sql\ImportProgressSql.vb" />

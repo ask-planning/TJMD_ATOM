@@ -164,9 +164,81 @@ Namespace Repositories
                 command.ExecuteNonQuery()
             End Using
         End Sub
+
+        ''' <summary>
+        ''' 帳票を発行したときの進捗を更新します。進捗データが無いときは先に作成します。
+        ''' </summary>
+        ''' <param name="connection">開いている接続。</param>
+        ''' <param name="transaction">トランザクション。</param>
+        ''' <param name="invoiceNoMain">INVOICE 番号（メイン）。</param>
+        ''' <param name="loginCode">利用者のログインコード。</param>
+        ''' <param name="syori">進める処理の種類。</param>
+        ''' <param name="syoriYmd">処理日。</param>
+        ''' <returns>更新した件数。すでに日付が入っていたときは 0。</returns>
+        ''' <remarks>
+        ''' 旧 Access 版の共通処理 `schedule_update` のうち、帳票の発行で使う分です。
+        ''' **同じ帳票を何度出しても日付は最初の 1 回だけ**入ります
+        ''' （更新条件に「その列が NULL」を付けているため）。旧システムと同じ動きです。
+        '''
+        ''' **カレンダーの自動更新は実装していません。**旧 VBA は処理NO 10 のとき、
+        ''' 設定が自動更新モードなら `TJM_master` の事業所カレンダーも書き換えていました
+        ''' （設計書 §18 C-58）。
+        ''' </remarks>
+        Public Function UpdateReportProgress(connection As SqlConnection, transaction As SqlTransaction,
+                                             invoiceNoMain As String, loginCode As String,
+                                             syori As ImportProgressSyori, syoriYmd As Date) As Integer
+
+            ' INVOICE 番号が無いときは何もしません（現行仕様）
+            If String.IsNullOrEmpty(invoiceNoMain) OrElse
+               String.Equals(invoiceNoMain, "NULL", StringComparison.OrdinalIgnoreCase) Then
+                Return 0
+            End If
+
+            Dim sql As String = ResolveUpdateSql(syori)
+
+            ' 進捗データが無いとき（101 の本登録を通していない INVOICE のため）
+            If Me.SelectProgressCount(connection, transaction, invoiceNoMain) = 0 Then
+                Dim headerInfo As ShanghaiInvoiceTotal = Me.SelectHeaderInfo(connection, transaction, invoiceNoMain)
+                Dim syurui As Integer = Me.ResolveSyurui(invoiceNoMain, headerInfo.SyukkaHoho)
+                Me.InsertProgress(connection, transaction, invoiceNoMain, syurui, headerInfo.BlDate, loginCode)
+            End If
+
+            Using command As New SqlCommand(sql, connection, transaction)
+                Me.AddProgressInvoiceNo(command, invoiceNoMain)
+                command.Parameters.Add("@SyoriYmd", SqlDbType.DateTime).Value = syoriYmd.Date
+                command.Parameters.Add("@UpdateLogin", SqlDbType.NVarChar, LoginCodeLength).Value = loginCode
+                Return command.ExecuteNonQuery()
+            End Using
+        End Function
 #End Region
 
 #Region "内部処理"
+        ''' <summary>
+        ''' 処理の種類から更新する SQL を決めます。
+        ''' </summary>
+        ''' <param name="syori">処理の種類。</param>
+        ''' <returns>UPDATE 文。</returns>
+        ''' <remarks>
+        ''' **列名を組み立てずに、種類ごとに用意した SQL から選びます。**
+        ''' 旧 VBA は番号から列名を引いて文字列で組み立てていましたが、
+        ''' 想定外の値が来たときに列名がそのまま SQL へ入る形になります。
+        ''' ここでは決められた種類以外は例外にします。
+        ''' </remarks>
+        Private Shared Function ResolveUpdateSql(syori As ImportProgressSyori) As String
+            Select Case syori
+                Case ImportProgressSyori.TsukanIrai
+                    Return ImportProgressSql.CreateUpdateTsukanIraiProgressSql()
+                Case ImportProgressSyori.HaisoLogi
+                    Return ImportProgressSql.CreateUpdateHaisoLogiProgressSql()
+                Case ImportProgressSyori.HaisoNisshin
+                    Return ImportProgressSql.CreateUpdateHaisoNisshinProgressSql()
+                Case Else
+                    Throw New ArgumentOutOfRangeException(NameOf(syori),
+                        "進捗の処理の種類が想定外です。値 " &
+                        CInt(syori).ToString(Globalization.CultureInfo.InvariantCulture))
+            End Select
+        End Function
+
         ''' <summary>
         ''' 進捗データを 1 件登録します。
         ''' </summary>

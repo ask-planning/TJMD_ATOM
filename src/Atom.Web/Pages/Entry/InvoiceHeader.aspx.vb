@@ -146,6 +146,9 @@ Namespace Pages.Entry
         ''' <summary>入荷明細書の連携ファイルの組み立て。</summary>
         Private ReadOnly _nyukaMeisaiWriter As New NyukaMeisaiReportWriter()
 
+        ''' <summary>輸入進捗の更新。</summary>
+        Private ReadOnly _progressService As New ImportProgressService()
+
         ''' <summary>SVF が出力した PDF の扱い。</summary>
         Private ReadOnly _pdfStore As New SvfPdfStore()
 
@@ -424,6 +427,16 @@ Namespace Pages.Entry
                     Return
                 End If
 
+                ' 出し終えてから進捗を進めます（設計書 §10.6 / §16）
+                Me._progressService.Update(loginCode, invoiceNoMain,
+                                           ImportProgressSyori.TsukanIrai, now.Date)
+
+                ' 入荷スケジュール（日新）も出したとき
+                If ContainsNisshin(written.Forms) Then
+                    Me._progressService.Update(loginCode, invoiceNoMain,
+                                               ImportProgressSyori.HaisoNisshin, now.Date)
+                End If
+
                 Me.ShowMessage(HaisoTehaiAcceptedMessage, False)
             Catch ex As UnauthorizedAccessException
                 Me.ShowMessage("SVF のフォルダへ書き込めません。管理者へ連絡してください。", True)
@@ -605,6 +618,10 @@ Namespace Pages.Entry
                     Me.ShowMessage(NyukaMeisaiEmptyMessage, True)
                     Return
                 End If
+
+                ' 出し終えてから進捗を進めます（設計書 §16）
+                Me._progressService.Update(loginCode, invoiceNoMain,
+                                           ImportProgressSyori.HaisoLogi, now.Date)
 
                 Me.ShowMessage(NyukaMeisaiAcceptedMessage, False)
             Catch ex As UnauthorizedAccessException
@@ -1052,6 +1069,25 @@ Namespace Pages.Entry
             Dim kubuns As New List(Of String)()
             kubuns.Add(HaisoTehaiForm.NyukaMeisai().ReportKubun)
             Return kubuns
+        End Function
+
+        ''' <summary>
+        ''' 出した様式に入荷スケジュール（日新）が含まれるかを判定します。
+        ''' </summary>
+        ''' <param name="forms">出した様式。</param>
+        ''' <returns>含まれるとき True。</returns>
+        ''' <remarks>
+        ''' 入荷スケジュールは配送手配書に付随して出ます（設計書 §10.5）。
+        ''' 出たときだけ進捗を進めるため、ここで確かめます。
+        ''' </remarks>
+        Private Shared Function ContainsNisshin(forms As IList(Of HaisoTehaiForm)) As Boolean
+            For Each form As HaisoTehaiForm In forms
+                ' 日新入荷の様式のとき
+                If form.IsNisshin Then
+                    Return True
+                End If
+            Next
+            Return False
         End Function
 
 
