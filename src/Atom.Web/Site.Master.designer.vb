@@ -32,6 +32,24 @@ Partial Public Class SiteMaster
     Protected WithEvents frmMain As Global.System.Web.UI.HtmlControls.HtmlForm
 
     '''<summary>
+    '''pnlEnvironment コントロール。
+    '''</summary>
+    '''<remarks>
+    '''自動生成されたフィールド。
+    '''変更するには、フィールドの宣言をデザイナー ファイルから分離コード ファイルに移動します。
+    '''</remarks>
+    Protected WithEvents pnlEnvironment As Global.System.Web.UI.WebControls.Panel
+
+    '''<summary>
+    '''litEnvironment コントロール。
+    '''</summary>
+    '''<remarks>
+    '''自動生成されたフィールド。
+    '''変更するには、フィールドの宣言をデザイナー ファイルから分離コード ファイルに移動します。
+    '''</remarks>
+    Protected WithEvents litEnvironment As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
     '''smMain コントロール。
     '''</summary>
     '''<remarks>

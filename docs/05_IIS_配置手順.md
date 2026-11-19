@@ -82,7 +82,7 @@ Test-Path \\（SVFサーバー）\SVFDATA\data_atom
 | .NET CLR | `v4.0.30319` / 統合パイプライン / 32bit は False |
 | **ID** | **`ApplicationPoolIdentity`（暫定）** |
 | アイドル タイムアウト | `0`（検証中は切らない） |
-| 接続文字列 | **暫定で平文のまま**（§2-1） |
+| 接続文字列 | **外部ファイルへ退避済み**（2026-11-18・§2-1）。**パスワード変更は未実施** |
 
 ### ID を暫定にしている理由
 
@@ -127,32 +127,45 @@ SVF 共有に権限のあるアカウントを**カスタムアカウントに�
 
 ## 2. 【重要】配置前に必ず行うこと
 
-### 2-1. 接続文字列を外に出す
+### 2-1. 接続文字列を外に出す（2026-11-18 対応済み）
 
-> **【2026-10-21 現在：暫定で平文のまま進めています】**
-> 接続先が**検証用 DB** であることを踏まえ、今回の配置では本項を適用していません。
-> **次の条件のいずれかに当てはまる前に、必ず対応すること。**
->
-> - 接続先を**本番 DB** に変えるとき
-> - サーバーを**社内の他の利用者に公開**するとき
-> - **本番運用を始める**とき
+接続文字列は `Web.config` から外へ出しました。`Web.config` に残っているのは参照だけです。
 
+```xml
+<connectionStrings configSource="connectionStrings.config" />
+```
 
-`src/Atom.Web/Web.config` に**接続文字列が平文で入っています**（SQL Server の認証情報を含む）。
-このままサーバーへ置かないでください。
+| ファイル | 置き場所 | Git | 中身 |
+|---|---|---|---|
+| `connectionStrings.config` | `src/Atom.Web/` 直下（配置先ではアプリのルート） | **対象外**（`.gitignore`） | 実値。環境ごとに手で置く |
+| `connectionStrings.sample.config` | 同上 | 対象 | ひな形。値は `（サーバー）`『（ユーザー）』などのまま |
 
-対応は次のどれかです。
+**手順（配置先で 1 回だけ）**
+
+1. `connectionStrings.sample.config` をコピーし、`connectionStrings.config` にリネームする
+2. `（サーバー）`『（ユーザー）』『（パスワード）』を環境の値に書き換える
+3. アプリケーションプールの ID に**読み取り権限**があることを確認する（§8 のフォルダ権限で足ります）
+
+**注意**
+
+- **拡張子を `.ini` や `.txt` に変えないこと。**`.config` は IIS が配信を拒否する拡張子で、
+  ブラウザから `http://（サーバー）/connectionStrings.config` を叩いても取得できません。
+  `.ini` は既定で配信されるため、パスワードを誰でも落とせる状態になります
+- このファイルが**無いと起動時に設定エラー**になります（接続エラーではなく、画面が出ません）
+- 値を書き換えるとアプリケーションが再起動します。利用中の人のセッションは切れます
+- 本書やチケットに接続文字列を書くときは `Password=***` のようにマスクしてください
+
+> **【要対応】現行のパスワードは Git の履歴に平文で残っています。**
+> 外部ファイルへ退避しても、**過去のコミットから読める値は無効になりません。**
+> 接続先を本番 DB へ切り替える前に、**SQL Server 側でパスワードを変更**してください。
+> `sa` を使っている点も含め、他システムへの影響確認が先です（保守マップ 未対応 #26 / #65）。
+
+**さらに強くするなら**（今回は未実施）
 
 | 案 | 内容 |
 |---|---|
-| **A** | **Windows 統合認証に変える**（`Integrated Security=True`）。アプリケーションプールの ID に DB 権限を与える。**推奨** |
-| B | `connectionStrings` を別ファイルへ出し（`configSource`）、そのファイルはリポジトリに含めない |
+| A | **Windows 統合認証に変える**（`Integrated Security=True`）。アプリケーションプールの ID に DB 権限を与える。パスワードを持たなくて済む |
 | C | `aspnet_regiis -pe` で `connectionStrings` セクションを暗号化する |
-
-**いずれにせよ、サーバー上の `Web.config` には平文のパスワードを置かないでください。**
-リポジトリの `Web.config` からも実値を外し、空のひな形に戻すこと。
-
-> 本書で接続文字列を記載するときは `Password=***` のようにマスクしてください。
 
 ### 2-2. デバッグを切る
 
@@ -314,27 +327,51 @@ D:\
 
 ## 6. Web.config を環境に合わせる
 
+### 書き換えるのは 1 か所だけ（2026-11-18 以降）
+
+```xml
+<add key="Atom.Environment" value="Dev"/>
+```
+
+| 値 | 想定 |
+|---|---|
+| `Local` | 開発 PC の IIS Express |
+| `Dev` | 検証サーバー（検証 DB） |
+| `Prod` | 本番サーバー（本番 DB） |
+
+環境で値が変わるキーは `キー名@Local` / `@Dev` / `@Prod` の形で 3 つとも書いてあります。
+**コメントの開け閉めはしません。**接続文字列も `connectionStrings.config` の
+`AtomDb@Local` / `@Dev` / `@Prod` が同じ値で切り替わります。
+
+`Prod` 以外のときは、全画面の上部に環境の帯（オレンジ）が出ます。
+本番で帯が出ていたら `Atom.Environment` が `Prod` になっていません。
+
+> **未設定や綴り違いのときは `Local` として動きます。**
+> 本番として動き出さないよう、安全側に倒してあります。
+> 逆に言えば「`Prod` と書いたつもりが効いていない」ことは帯の有無で分かります。
+
+### 配置前に値を入れておくもの
+
 | キー | 設定する値 |
 |---|---|
-| `connectionStrings` の `AtomDb` | **検証用 DB**（§2-1 の方式で） |
-| `Atom.SystemVersion` | そのまま |
-| **`Atom.UploadFolderPath`** | **サーバー上のパスへ。**開発機のデスクトップを指したままだと 101 の取込で落ちる |
-| `Log.Writer` | `Trace` のままか、`File` にして `Log.FolderPath` を指定 |
-| `Log.FolderPath` | `File` のときのみ。`D:\Systems\ATOM\logs`。**書き込み権限が要る**（§8） |
-| `Mail.Enabled` | **`false`**（検証中は送信しない） |
-| `Poem.UpdateEnabled` | 巻芯入出庫を更新するか |
-| **`Poem.MakishinProcedureName`** | **検証は `usp_poem_makishin_nyu_syukko_update_dev`。本番は `usp_poem_makishin_nyu_syukko_update`。**ストアドが接続先に追従しないため、ここを間違えると別環境のデータを書き換える |
-| `Svf.WatchFolderPath` | SVF の監視フォルダ（`\\（SVFサーバー）\SVFDATA\data_atom`） |
-| `Svf.PdfFolderPath` | PDF の出力先 |
-| `Svf.OutputPrinter` | `HONKAN_PRNT01` |
+| `Atom.Environment` | `Dev`（検証サーバー）／ `Prod`（本番サーバー） |
+| `connectionStrings` の `AtomDb@<環境>` | `connectionStrings.config` に書く（§2-1）。検証は **ATOM_dev** |
+| `Atom.UploadFolderPath@<環境>` | **サーバー上のパスへ。**開発機のデスクトップを指したままだと 101 の取込で落ちる |
+| `Log.Writer@<環境>` | `Trace` のままか、`File` にして `Log.FolderPath@<環境>` を指定 |
+| `Log.FolderPath@<環境>` | `File` のときのみ。`D:\Systems\ATOM\logs`。**書き込み権限が要る**（§8） |
+| `Mail.Enabled@<環境>` | **`false`**（検証中は送信しない） |
+| `Poem.UpdateEnabled@<環境>` | 巻芯入出庫を更新するか |
+| **`Poem.MakishinProcedureName@<環境>`** | **検証は `usp_poem_makishin_nyu_syukko_update_dev`。本番は `usp_poem_makishin_nyu_syukko_update`。**ストアドが接続先に追従しないため、ここを間違えると別環境のデータを書き換える |
+| `Atom.SystemVersion` | そのまま（環境では変わらない） |
+| `Svf.WatchFolderPath` / `Svf.PdfFolderPath` / `Svf.OutputPrinter` | 全環境で同じ（SVF サーバーは 1 つ） |
+| `compilation debug` | **`false`** |
 
-> **`Svf.*` は全環境で同じ値**です（SVF サーバーは 1 つ）。`Web.config` でも環境ブロックの外に置いています。
+> **`Svf.*` は全環境で同じ値**です。そのため `@環境` を付けていません。
 >
 > ただし **PDF の置き場所も共通**になります。PDF 名は `帳票区分_ログインコード.pdf` なので、
 > **同じ人が検証と本番の両方で帳票を出すと、後から出したほうで上書きされます。**
-> 並行して運用する時期になったら、`Svf.PdfFolderPath` だけ環境ごとに分けてください
+> 並行して運用する時期になったら、`Svf.PdfFolderPath` だけ `@環境` を付けて分けてください
 > （`\\（SVFサーバー）\svfdata\PDF\ATOM_dev` を作るなど）。
-| `compilation debug` | **`false`** |
 
 ---
 

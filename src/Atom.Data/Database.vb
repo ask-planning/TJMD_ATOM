@@ -23,6 +23,27 @@ Public NotInheritable Class Database
     End Sub
 #End Region
 
+#Region "プロパティ"
+    ''' <summary>
+    ''' いま繋ぎに行くデータベース名です。
+    ''' </summary>
+    ''' <remarks>
+    ''' 画面上部の環境の帯に「接続先」として出すために使います。
+    ''' **接続文字列そのものを画面へ出してはいけません。**ここではデータベース名だけを返します。
+    ''' 設定が無いときや解析できないときは空文字を返します（表示のためだけなので落としません）。
+    ''' </remarks>
+    Public Shared ReadOnly Property CurrentDatabaseName As String
+        Get
+            Try
+                Return Atom.Core.Configuration.AppEnvironment.GetDatabaseName(GetConnectionString())
+            Catch ex As ConfigurationErrorsException
+                ' 接続文字列が未設定のとき
+                Return String.Empty
+            End Try
+        End Get
+    End Property
+#End Region
+
 #Region "公開メソッド"
     ''' <summary>
     ''' 接続を生成して開きます。
@@ -56,12 +77,8 @@ Public NotInheritable Class Database
     ''' </summary>
     ''' <returns>接続文字列。</returns>
     Private Shared Function GetConnectionString() As String
-        Dim setting As ConnectionStringSettings = ConfigurationManager.ConnectionStrings(ConnectionName)
-        ' 設定が無いとき
-        If setting Is Nothing Then
-            Throw New ConfigurationErrorsException("接続文字列 " & ConnectionName & " が設定されていません。")
-        End If
-        Return setting.ConnectionString
+        ' 環境ごとの接続（AtomDb@Local など）を優先して取ります
+        Return Atom.Core.Configuration.AppEnvironment.GetConnectionString(ConnectionName)
     End Function
 #End Region
 

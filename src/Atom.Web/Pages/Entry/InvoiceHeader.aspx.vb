@@ -1040,7 +1040,8 @@ Namespace Pages.Entry
         ''' <param name="key">設定キー。</param>
         ''' <returns>設定値。未設定のときは空文字。</returns>
         Private Shared Function GetSetting(key As String) As String
-            Dim value As String = ConfigurationManager.AppSettings(key)
+            ' 環境ごとの値（キー@Local など）を優先して取ります
+            Dim value As String = Atom.Core.Configuration.AppEnvironment.GetAppSetting(key)
             Return If(value, String.Empty)
         End Function
 

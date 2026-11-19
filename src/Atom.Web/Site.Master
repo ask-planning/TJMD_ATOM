@@ -15,6 +15,12 @@
     <form id="frmMain" runat="server">
         <asp:ScriptManager ID="smMain" runat="server" />
 
+        <%-- 本番以外のときに出す環境の帯です。出すかどうかは Site.Master.vb が決めます。
+             環境は Web.config の Atom.Environment 1 か所で切り替わります。 --%>
+        <asp:Panel ID="pnlEnvironment" runat="server" CssClass="atom-env-bar" Visible="false">
+            <asp:Literal ID="litEnvironment" runat="server" Mode="Encode" />
+        </asp:Panel>
+
         <atom:Header ID="hdrHeader" runat="server" />
 
         <%-- メッセージ領域は UpdatePanel で囲みます。

@@ -51,7 +51,7 @@
 
     /* 画面の中身を収める幅。大きなモニターで左右に広がりすぎないよう中央へ寄せます。
        ここを変えればヘッダー・メッセージ・コンテンツがまとめて揃います。 */
-    --atom-page-width: 1400px;
+    --atom-page-width: 1180px;
 
     /* 画面の左右に空ける余白。狭い画面では末尾のメディアクエリで詰めます。 */
     --atom-page-gutter: 20px;
@@ -78,6 +78,12 @@
     --atom-version-text: var(--atom-disabled-text);
     --atom-header-bg: var(--atom-surface);
     --atom-header-text: var(--atom-text);
+
+    /* 環境の帯。本番と取り違えないよう、他で使っていない強い色にしています。 */
+    --atom-env-bar-bg: #B4540A;
+    --atom-env-bar-text: #FFFFFF;
+    /* 帯の高さ。共通ヘッダーをこの分だけ下げて貼り付けるため、固定値にしています。 */
+    --atom-env-bar-height: 26px;
 }
 
 * {
@@ -268,6 +274,40 @@ body {
 }
 
 /* ------------------------------------------------------------------
+   環境の帯（本番以外でだけ出る）
+   ------------------------------------------------------------------ */
+
+/* 本番と見間違えないための目印です。スクロールしても消えないよう画面上部に貼り付けます。
+   Web.config の Atom.Environment が Prod のときは、そもそも出力されません。 */
+.atom-env-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--atom-env-bar-height);
+    padding: 0 16px;
+    background-color: var(--atom-env-bar-bg);
+    color: var(--atom-env-bar-text);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    line-height: var(--atom-env-bar-height);
+    text-align: center;
+}
+
+/* 共通ヘッダーも top: 0 で貼り付くため、帯があるときだけその分だけ下げます。
+   本番では帯そのものが出力されないので、この指定は効きません。 */
+.atom-env-bar ~ .atom-header {
+    top: var(--atom-env-bar-height);
+}
+
+/* 紙には出しません。 */
+@media print {
+    .atom-env-bar {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------------
    メッセージ領域
    ------------------------------------------------------------------ */
 
@@ -310,7 +350,8 @@ body {
 /* 入力のかたまりは白いカードに載せます。 */
 .atom-form {
     max-width: 760px;
-    margin: 0;
+    margin-right: auto;
+    margin-left: auto;
     padding: 22px;
     border-radius: var(--atom-radius-l);
     background-color: var(--atom-surface);

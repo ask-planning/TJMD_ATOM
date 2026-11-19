@@ -46,7 +46,7 @@ Public Class Global_asax
     ''' 例外の内容が落ちてしまい、原因を追えませんでした。
     ''' </remarks>
     Private Shared Sub RegisterLogWriter()
-        Dim writerName As String = ConfigurationManager.AppSettings(LogWriterKey)
+        Dim writerName As String = Atom.Core.Configuration.AppEnvironment.GetAppSetting(LogWriterKey)
 
         ' Trace のとき
         If String.Equals(writerName, TraceWriterName, StringComparison.OrdinalIgnoreCase) Then

@@ -17,7 +17,7 @@ ASP.NET Web Forms / VB.NET / .NET Framework 4.8.1 / SQL Server（**既存DB**）
 | プロジェクト | 役割 |
 |---|---|
 | `Atom.Web` | 画面層 |
-| `Atom.Core` | エンティティ・業務ロジック・ログ抽象 |
+| `Atom.Core` | エンティティ・業務ロジック・ログ抽象・環境設定（`Configuration/`） |
 | `Atom.Data` | データアクセス（`Sql/` と `Repositories/`） |
 | `Atom.Mail` | メール送信 |
 | `Atom.Report` | SVF 帳票 |
@@ -61,7 +61,7 @@ TJM_ATOM/
 ├ src/
 │  ├ Atom.Web/     Pages/{Master,Entry,Search,Report} Controls/ Common/
 │  │               Content/ Scripts/ Images/ Site.Master Global.asax Web.config
-│  ├ Atom.Core/    Entities/ Services/ Logging/ Exceptions/
+│  ├ Atom.Core/    Entities/ Configuration/ Services/ Logging/ Exceptions/
 │  ├ Atom.Data/    Database.vb Sql/ Repositories/ Logging/
 │  ├ Atom.Mail/    Atom.Report/    Atom.Tests/
 ├ db/schema/       既存DBの参照用スナップショット（読み取り専用）
@@ -123,14 +123,17 @@ rfv rev cv vsm  cnt(Content)
 
 ## 設定は Web.config から取得する
 
+**環境（Local / Dev / Prod）の切り替えは `Atom.Environment` の 1 キーだけ。** 環境で値が変わるキーは `キー名@Local` / `@Dev` / `@Prod` の形で 3 つとも併記し、コメントの開閉はしない。読み出しは `Atom.Core/Configuration/AppEnvironment.vb` を通す（`@環境` を優先し、無ければ環境なしのキー）。未設定・綴り違いは `Local` 扱い。
+
 | 用途 | キー |
 |---|---|
+| 環境 | `Atom.Environment`（Local / Dev / Prod） |
 | ログ出力先 | `Log.Writer`（Sql / File / Trace）, `Log.ConnectionName`, `Log.TableName`, `Log.FolderPath`, `Log.MinimumLevel` |
 | メール | `Mail.Enabled`（false で送信抑止・ログのみ）, `Mail.FromAddress`, `Mail.RedirectTo`（検証用の宛先差し替え） |
 | SVF | `Svf.FormFolderPath`, `Svf.WorkFolderPath` |
-| DB接続 | `connectionStrings` の `AtomDb` |
+| DB接続 | `connectionStrings` の `AtomDb@<環境>`。**実値は `src/Atom.Web/connectionStrings.config`（Git 管理対象外）** |
 
-パス・出力先・送信可否をコードに直書きしない。ログは `Logger` 経由のみ（画面から直接書かない）。接続文字列の実値はコミットしない。
+パス・出力先・送信可否をコードに直書きしない。ログは `Logger` 経由のみ（画面から直接書かない）。**接続文字列・パスワードの実値はコミットしない。**
 
 ## 提出前チェック
 

@@ -10,6 +10,11 @@ Namespace Common
     ''' Web.config の appSettings から設定値を取得します。
     ''' 設定値をコードへ直接書かないため、参照はすべてこのクラスを通します。
     ''' </summary>
+    ''' <remarks>
+    ''' 読み出しは <see cref="Atom.Core.Configuration.AppEnvironment"/> を通します。
+    ''' 「キー@環境名」の値があればそちらを優先するためです。
+    ''' 環境の切り替えは Web.config の Atom.Environment 1 か所だけで行います。
+    ''' </remarks>
     Public NotInheritable Class AppSettings
 
 #Region "定数"
@@ -47,7 +52,7 @@ Namespace Common
         ''' </summary>
         Public Shared ReadOnly Property ManualUrl As String
             Get
-                Dim value As String = ConfigurationManager.AppSettings(ManualUrlKey)
+                Dim value As String = Atom.Core.Configuration.AppEnvironment.GetAppSetting(ManualUrlKey)
                 ' 未設定のとき
                 If value Is Nothing Then
                     Return String.Empty
@@ -82,12 +87,7 @@ Namespace Common
         ''' <param name="key">appSettings のキー。</param>
         ''' <returns>設定値。</returns>
         Private Shared Function GetRequired(key As String) As String
-            Dim value As String = ConfigurationManager.AppSettings(key)
-            ' 未設定または空のとき（既定値で黙って動かさず、起動時に気づけるようにする）
-            If String.IsNullOrEmpty(value) OrElse value.Trim().Length = 0 Then
-                Throw New ConfigurationErrorsException("Web.config の appSettings に " & key & " が設定されていません。")
-            End If
-            Return value.Trim()
+            Return Atom.Core.Configuration.AppEnvironment.GetRequiredAppSetting(key)
         End Function
 #End Region
 

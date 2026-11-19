@@ -25,6 +25,9 @@ packages/
 PublishProfiles/
 
 # 環境ごとの設定（接続文字列を含むため）
+# Web.config から configSource で読み込む実値のファイル。
+# ひな形（connectionStrings.sample.config）だけをコミットする。
+src/Atom.Web/connectionStrings.config
 Web.*.config.local
 appsettings.local.json
 

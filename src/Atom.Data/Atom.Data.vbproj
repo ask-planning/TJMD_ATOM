@@ -52,7 +52,7 @@
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="Database.vb" />
     <Compile Include="Logging\SqlLogWriter.vb" />
-    <Compile Include="Repositories\ExpenseCodeRepository.vb" />
+    <Compile Include="Repositories\ImportKeihiCodeRepository.vb" />
     <Compile Include="Repositories\ImportProgressRepository.vb" />
     <Compile Include="Repositories\LoginRepository.vb" />
     <Compile Include="Repositories\ShanghaiImportRepository.vb" />
@@ -62,9 +62,10 @@
     <Compile Include="Services\ShanghaiImportService.vb" />
     <Compile Include="Services\ShanghaiInvoiceHeaderService.vb" />
     <Compile Include="Services\ShanghaiHaisoTehaiService.vb" />
+    <Compile Include="Services\ImportKeihiCodeService.vb" />
     <Compile Include="Services\ImportProgressService.vb" />
     <Compile Include="Services\ShanghaiNyukaMeisaiService.vb" />
-    <Compile Include="Sql\ExpenseCodeSql.vb" />
+    <Compile Include="Sql\ImportKeihiCodeSql.vb" />
     <Compile Include="Sql\ImportProgressSql.vb" />
     <Compile Include="Sql\LoginSql.vb" />
     <Compile Include="Sql\ShanghaiImportSql.vb" />

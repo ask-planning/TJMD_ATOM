@@ -127,6 +127,13 @@
     <Compile Include="Pages\Entry\InvoiceImport.aspx.designer.vb">
       <DependentUpon>InvoiceImport.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Pages\Master\ImportKeihiCode.aspx.vb">
+      <DependentUpon>ImportKeihiCode.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Pages\Master\ImportKeihiCode.aspx.designer.vb">
+      <DependentUpon>ImportKeihiCode.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Pages\Common\Login.aspx.vb">
       <DependentUpon>Login.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
@@ -152,9 +159,11 @@
     <Content Include="Pages\Entry\ImportResult.aspx" />
     <Content Include="Pages\Entry\InvoiceHeader.aspx" />
     <Content Include="Pages\Entry\InvoiceImport.aspx" />
+    <Content Include="Pages\Master\ImportKeihiCode.aspx" />
     <Content Include="Pages\Report\ReportView.aspx" />
     <Content Include="Scripts\atom.js" />
     <Content Include="Site.Master" />
+    <Content Include="connectionStrings.sample.config" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>

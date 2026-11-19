@@ -4,18 +4,25 @@
     <%-- この画面だけで使うスタイルです。共通のスタイルは Content/site.css にあります。
          色は site.css の共通変数を参照し、この画面で HEX 値を直接書かないようにします。 --%>
     <style type="text/css">
-        /* 左に入力、右に操作。画面が狭くなると下へ回り込みます。 */
+        /* 左に入力、右に操作。画面が狭くなると下へ回り込みます。
+           広い画面では入力の列が伸びて右の操作列と離れてしまうため、
+           2 列ぶんの幅で止めて中央へ寄せます。 */
         .atom-header-area {
             display: flex;
             flex-wrap: wrap;
             align-items: flex-start;
+            justify-content: center;
             gap: 20px;
+            max-width: 1072px;
+            margin-right: auto;
             margin-bottom: 24px;
+            margin-left: auto;
         }
 
         .atom-header-inputs {
             flex: 1 1 520px;
             min-width: 420px;
+            max-width: 780px;
         }
 
         /* 操作の列もカードに載せて、入力のカードと高さを揃えます。 */

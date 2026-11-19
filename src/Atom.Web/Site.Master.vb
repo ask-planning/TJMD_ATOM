@@ -3,6 +3,8 @@ Option Explicit On
 Option Infer Off
 
 Imports System.Web.UI
+Imports Atom.Core.Configuration
+Imports Atom.Data
 Imports Atom.Web.Common
 
 ''' <summary>
@@ -17,6 +19,9 @@ Public Class SiteMaster
 
     ''' <summary>メッセージ領域のエラー表示に使う CSS クラス。</summary>
     Private Const ErrorCssClass As String = "atom-message atom-message-error"
+
+    ''' <summary>環境の帯で、環境名と接続先の間に置く区切り。</summary>
+    Private Const EnvironmentSeparator As String = "　／　"
 #End Region
 
 #Region "公開メソッド"
@@ -53,6 +58,35 @@ Public Class SiteMaster
     Protected Overrides Sub OnPreRender(e As EventArgs)
         MyBase.OnPreRender(e)
         Me.hdrHeader.ApplyFor(TryCast(Me.Page, BasePage))
+        Me.ApplyEnvironmentBar()
+    End Sub
+#End Region
+
+#Region "内部処理"
+    ''' <summary>
+    ''' 本番以外のとき、画面上部に環境の帯を出します。
+    ''' </summary>
+    ''' <remarks>
+    ''' 環境は Web.config の Atom.Environment で決まります。
+    ''' **未設定のときは本番ではなく開発として扱う**ため、帯が出ます。
+    ''' 接続先はデータベース名だけを出します（接続文字列は画面に出しません）。
+    ''' </remarks>
+    Private Sub ApplyEnvironmentBar()
+        ' 本番のとき（目印を出さない）
+        If AppEnvironment.IsProduction Then
+            Me.pnlEnvironment.Visible = False
+            Return
+        End If
+
+        Dim text As String = AppEnvironment.DisplayName
+        Dim databaseName As String = Database.CurrentDatabaseName
+        ' 接続先が分かるとき
+        If Not String.IsNullOrEmpty(databaseName) Then
+            text = text & EnvironmentSeparator & "接続先 " & databaseName
+        End If
+
+        Me.litEnvironment.Text = text
+        Me.pnlEnvironment.Visible = True
     End Sub
 #End Region
 

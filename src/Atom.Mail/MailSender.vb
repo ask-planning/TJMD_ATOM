@@ -56,7 +56,7 @@ Public Class MailSender
     ''' <summary>差出人アドレスを取得します。</summary>
     ''' <returns>差出人アドレス。</returns>
     Private Shared Function GetFromAddress() As String
-        Dim address As String = ConfigurationManager.AppSettings(FromAddressKey)
+        Dim address As String = Atom.Core.Configuration.AppEnvironment.GetAppSetting(FromAddressKey)
         ' 設定が無いとき
         If String.IsNullOrEmpty(address) Then
             Throw New ConfigurationErrorsException("設定 " & FromAddressKey & " が指定されていません。")

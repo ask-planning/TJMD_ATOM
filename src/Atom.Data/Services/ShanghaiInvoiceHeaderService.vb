@@ -338,7 +338,7 @@ Namespace Services
         ''' そのため既定を「行わない」とし、`Web.config` で明示したときだけ実行します。
         ''' </remarks>
         Private Shared Function IsPoemUpdateEnabled() As Boolean
-            Dim value As String = ConfigurationManager.AppSettings(PoemUpdateEnabledKey)
+            Dim value As String = Atom.Core.Configuration.AppEnvironment.GetAppSetting(PoemUpdateEnabledKey)
             ' 設定が無いときは安全側に倒す
             If String.IsNullOrEmpty(value) Then
                 Return False
@@ -377,7 +377,7 @@ Namespace Services
                 Return String.Empty
             End If
 
-            Dim configured As String = ConfigurationManager.AppSettings(PoemProcedureNameKey)
+            Dim configured As String = Atom.Core.Configuration.AppEnvironment.GetAppSetting(PoemProcedureNameKey)
             ' 設定が無いとき
             If String.IsNullOrWhiteSpace(configured) Then
                 Logger.WriteWarning(LogSource,

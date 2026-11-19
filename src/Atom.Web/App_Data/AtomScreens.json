@@ -133,7 +133,7 @@
         {
           "MenuNo": 907,
           "Title": "輸入経費コード登録",
-          "Url": "",
+          "Url": "~/Pages/Master/ImportKeihiCode.aspx",
           "HeaderBackColor": ""
         }
       ]

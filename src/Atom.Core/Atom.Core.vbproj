@@ -68,8 +68,8 @@
   <ItemGroup>
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="Entities\DenpyoKubun.vb" />
-    <Compile Include="Entities\ExpenseCode.vb" />
     <Compile Include="Entities\ImportCheckResult.vb" />
+    <Compile Include="Entities\ImportKeihiCode.vb" />
     <Compile Include="Entities\ImportProgressSyori.vb" />
     <Compile Include="Entities\Koumoku.vb" />
     <Compile Include="Entities\LoginUser.vb" />
@@ -80,6 +80,7 @@
     <Compile Include="Entities\ShanghaiImportRow.vb" />
     <Compile Include="Entities\Tsuka.vb" />
     <Compile Include="Exceptions\ImportFormatException.vb" />
+    <Compile Include="Configuration\AppEnvironment.vb" />
     <Compile Include="Services\ShanghaiCodeFormatter.vb" />
     <Compile Include="Services\ShanghaiImportExcelParser.vb" />
     <Compile Include="Services\ShanghaiInvoiceNoFormatter.vb" />
